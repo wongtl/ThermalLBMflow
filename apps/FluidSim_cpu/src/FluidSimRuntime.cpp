@@ -118,6 +118,10 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
     const auto& geometryRegions = binding.checkpointRegions;
     const auto& nuOutputRegions = binding.nuOutputRegions;
     const auto& nuVtkFields = binding.nuVtkFields;
+    std::unordered_map<walberla::uint16_t, size_t> nuOutputSlotByRegionId;
+    nuOutputSlotByRegionId.reserve(nuOutputRegions.size());
+    for (size_t idx = size_t(0); idx < nuOutputRegions.size(); ++idx)
+        nuOutputSlotByRegionId.emplace(nuOutputRegions[idx].regionId, idx);
 
     const auto domainSizePhys = binding.domainSizePhys;
     const auto paddingSizePhys = binding.paddingSizePhys;
@@ -543,10 +547,6 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
     // Thermal diagnostics logger.
     if (thermalLogCadence > uint_t(0))
     {
-        std::unordered_map<walberla::uint16_t, size_t> nuRegionSlotById;
-        nuRegionSlotById.reserve(nuOutputRegions.size());
-        for (size_t idx = size_t(0); idx < nuOutputRegions.size(); ++idx)
-            nuRegionSlotById.emplace(nuOutputRegions[idx].regionId, idx);
         std::vector<std::string> nuOutputLabels;
         nuOutputLabels.reserve(nuOutputRegions.size());
         for (const auto& region : nuOutputRegions)
@@ -577,8 +577,8 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
             {
                 if (entry.thermalType != THERMAL_DIRICHLET || entry.bcId != BC_DIRICHLET)
                     continue;
-                const auto slotIt = nuRegionSlotById.find(entry.regionId);
-                if (slotIt == nuRegionSlotById.end())
+                const auto slotIt = nuOutputSlotByRegionId.find(entry.regionId);
+                if (slotIt == nuOutputSlotByRegionId.end())
                     continue;
                 nuBlock.cells.push_back(ThermalNuCellRef{&entry, slotIt->second});
             }
@@ -716,8 +716,6 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
     // VTK output hooks.
     if (vtkWriteFrequency > uint_t(0) || vtkWriteAtStepZero)
     {
-        const bool vtkBinary = true;
-
         // Pre-compute constant Nu scale factors (all inputs are binding-time constants).
         std::unordered_map<walberla::uint16_t, size_t> nuVtkFieldSlotByRegionId;
         nuVtkFieldSlotByRegionId.reserve(nuVtkFields.size());
@@ -728,11 +726,6 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
         std::vector<real_t> nuValueResetBySlot(nuVtkFields.size(), std::numeric_limits<real_t>::quiet_NaN());
         bool anyValidNuScale = false;
         {
-            std::unordered_map<walberla::uint16_t, size_t> nuOutputSlotByRegionId;
-            nuOutputSlotByRegionId.reserve(nuOutputRegions.size());
-            for (size_t idx = size_t(0); idx < nuOutputRegions.size(); ++idx)
-                nuOutputSlotByRegionId.emplace(nuOutputRegions[idx].regionId, idx);
-
             for (size_t slot = size_t(0); slot < nuVtkFields.size(); ++slot)
             {
                 const auto infoIt = nuOutputSlotByRegionId.find(nuVtkFields[slot].regionId);
@@ -896,7 +889,7 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
             outputBaseDir,
             "simulation_step",
             false,
-            vtkBinary,
+            true,
             true,
             false,
             uint_t(0),

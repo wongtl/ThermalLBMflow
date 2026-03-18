@@ -128,6 +128,10 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
     const auto& geometryRegions = binding.checkpointRegions;
     const auto& nuOutputRegions = binding.nuOutputRegions;
     const auto& nuVtkFields = binding.nuVtkFields;
+    std::unordered_map<walberla::uint16_t, size_t> nuOutputSlotByRegionId;
+    nuOutputSlotByRegionId.reserve(nuOutputRegions.size());
+    for (size_t idx = size_t(0); idx < nuOutputRegions.size(); ++idx)
+        nuOutputSlotByRegionId.emplace(nuOutputRegions[idx].regionId, idx);
 
     const auto domainSizePhys = binding.domainSizePhys;
     const auto paddingSizePhys = binding.paddingSizePhys;
@@ -565,10 +569,6 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
     // Thermal diagnostics logger.
     if (thermalLogCadence > uint_t(0))
     {
-        std::unordered_map<walberla::uint16_t, size_t> nuRegionSlotById;
-        nuRegionSlotById.reserve(nuOutputRegions.size());
-        for (size_t idx = size_t(0); idx < nuOutputRegions.size(); ++idx)
-            nuRegionSlotById.emplace(nuOutputRegions[idx].regionId, idx);
         std::vector<std::string> nuOutputLabels;
         nuOutputLabels.reserve(nuOutputRegions.size());
         for (const auto& region : nuOutputRegions)
@@ -583,7 +583,7 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
         std::vector<double> localArea(nuOutputRegions.size(), 0.0);
         std::vector<double> nuByRegion(nuOutputRegions.size(), std::numeric_limits<double>::quiet_NaN());
         loop.addFuncAfterTimeStep(
-            [&, nuRegionSlotById, nuOutputLabels, nuGpuCache, warnedNuZeroArea, warnedNuZeroDeltaTheta,
+            [&, nuOutputSlotByRegionId, nuOutputLabels, nuGpuCache, warnedNuZeroArea, warnedNuZeroDeltaTheta,
              reduceLocal = std::move(reduceLocal), reduceGlobal = std::move(reduceGlobal),
              localFluxArea = std::move(localFluxArea), localArea = std::move(localArea),
              nuByRegion = std::move(nuByRegion)]() mutable {
@@ -598,7 +598,7 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
                 gpureduce::reduceNuLocal(
                     thermalBCBlocks,
                     thetaRuntimeID,
-                    nuRegionSlotById,
+                    nuOutputSlotByRegionId,
                     1.0,
                     1.0,
                     *nuGpuCache,
@@ -702,11 +702,6 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
         std::vector<real_t> nuValueResetBySlot(nuVtkFields.size(), std::numeric_limits<real_t>::quiet_NaN());
         bool anyValidNuScale = false;
         {
-            std::unordered_map<walberla::uint16_t, size_t> nuOutputSlotByRegionId;
-            nuOutputSlotByRegionId.reserve(nuOutputRegions.size());
-            for (size_t idx = size_t(0); idx < nuOutputRegions.size(); ++idx)
-                nuOutputSlotByRegionId.emplace(nuOutputRegions[idx].regionId, idx);
-
             for (size_t slot = size_t(0); slot < nuVtkFields.size(); ++slot)
             {
                 const auto infoIt = nuOutputSlotByRegionId.find(nuVtkFields[slot].regionId);
