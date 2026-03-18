@@ -2756,10 +2756,6 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
         }
     }
 
-    auto syncRuntimeToHostTheta = [&]() {};
-    auto syncRuntimeToHostRhoVelTheta = [&]() {};
-    auto syncRuntimeToHostPdfThetaRhoVel = [&]() {};
-
     // Runtime binding handoff.
     FluidSimRuntimeBindings binding;
     binding.isRoot = isRoot;
@@ -2772,9 +2768,6 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     binding.blockForest = blockForest;
 
     binding.updateThetaRef = updateThetaRef;
-    binding.syncRuntimeToHostTheta = syncRuntimeToHostTheta;
-    binding.syncRuntimeToHostRhoVelTheta = syncRuntimeToHostRhoVelTheta;
-    binding.syncRuntimeToHostPdfThetaRhoVel = syncRuntimeToHostPdfThetaRhoVel;
     binding.applyOpenBoundary = applyOpenBoundary;
     binding.startCommunicatePdfTheta = startCommunicatePdfTheta;
     binding.waitCommunicatePdfTheta = waitCommunicatePdfTheta;

@@ -38,9 +38,6 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
 {
     // Validate required runtime bindings.
     WALBERLA_CHECK(bool(binding.updateThetaRef), "updateThetaRef callback must be set.");
-    WALBERLA_CHECK(bool(binding.syncRuntimeToHostTheta));
-    WALBERLA_CHECK(bool(binding.syncRuntimeToHostRhoVelTheta));
-    WALBERLA_CHECK(bool(binding.syncRuntimeToHostPdfThetaRhoVel));
     WALBERLA_CHECK(bool(binding.applyOpenBoundary));
     WALBERLA_CHECK(
         bool(binding.startCommunicatePdfTheta) && bool(binding.waitCommunicatePdfTheta),

@@ -59,12 +59,6 @@ struct FluidSimRuntimeBindings
     // Runtime phase callbacks.
     std::function<void()> updateThetaRef;
 
-    // Host-state sync phases.
-    // CPU: currently no-op. GPU: device->host sync for diagnostics/output/checkpoint.
-    std::function<void()> syncRuntimeToHostTheta;
-    std::function<void()> syncRuntimeToHostRhoVelTheta;
-    std::function<void()> syncRuntimeToHostPdfThetaRhoVel;
-
     std::function<void()> applyOpenBoundary;
 
     // Communication phases.
