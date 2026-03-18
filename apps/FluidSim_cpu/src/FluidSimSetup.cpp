@@ -654,6 +654,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                 }
                 return true;
             };
+            // WALBERLA_ABORT terminates via std::exit, so these parse helpers do not need fallback returns.
             auto parseUIntMeta = [&](const std::string& key) -> uint_t {
                 const std::string value = getMeta(key);
                 try
@@ -680,7 +681,6 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                     WALBERLA_ABORT("Invalid checkpoint metadata: key='" << key
                                    << "' value='" << value << "' file='" << restartPaths.metaFile.string()
                                    << "' err='" << e.what() << "'");
-                    return uint_t(0);
                 }
             };
             auto parseDoubleMeta = [&](const std::string& key, const std::string& value) -> double {
@@ -701,7 +701,6 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                     WALBERLA_ABORT("Invalid checkpoint metadata: key='" << key
                                    << "' value='" << value << "' file='" << restartPaths.metaFile.string()
                                    << "' err='" << e.what() << "'");
-                    return 0.0;
                 }
             };
             constexpr double kRestartMetaRelTol = 1e-5;
