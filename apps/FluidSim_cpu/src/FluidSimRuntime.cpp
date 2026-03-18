@@ -908,11 +908,7 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
                 std::make_shared<walberla::field::VTKWriter<ScalarField, walberla::float32>>(
                     nuField.valueFieldID,
                     "Nu_" + nuOutputLabelFromRegionName(nuField.regionName)));
-        auto vtkStepDue = [&](uint_t step) -> bool {
-            if (vtkWriteAtStepZero && step == uint_t(0))
-                return true;
-            return cadenceDue(step, vtkWriteFrequency, false);
-        };
+        auto vtkStepDue = [&](uint_t step) -> bool { return cadenceDue(step, vtkWriteFrequency, vtkWriteAtStepZero); };
         loop.addFuncAfterTimeStep([&, vtkStepDue, updateNuFieldsForVtk]() {
             const uint_t step = loop.getCurrentTimeStep();
             if (!vtkStepDue(step))

@@ -784,11 +784,7 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
             }
         }
 
-        auto vtkStepDue = [&](uint_t step) -> bool {
-            if (vtkWriteAtStepZero && step == uint_t(0))
-                return true;
-            return cadenceDue(step, vtkWriteFrequency, false);
-        };
+        auto vtkStepDue = [&](uint_t step) -> bool { return cadenceDue(step, vtkWriteFrequency, vtkWriteAtStepZero); };
 
         auto updateNuFieldsForVtk = [&,
              nuScaleBySlot = std::move(nuScaleBySlot),
