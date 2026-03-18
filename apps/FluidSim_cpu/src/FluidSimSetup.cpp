@@ -1890,6 +1890,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             bool hasInletOpenLink = false;
             bool hasOutletOpenLink = false;
             bool hasPressureOpenLink = false;
+            unsigned int openTypeCount = 0u;
             if (boundaryAffected &&
                 (hasInletBoundarySolids || hasOutletBoundarySolids || hasPressureBoundarySolids))
             {
@@ -1927,9 +1928,9 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                         hasPressureOpenLink = true;
                     }
 
-                    const unsigned int openTypeCount = unsigned(hasInletOpenLink) +
-                                                       unsigned(hasOutletOpenLink) +
-                                                       unsigned(hasPressureOpenLink);
+                    openTypeCount = unsigned(hasInletOpenLink) +
+                                    unsigned(hasOutletOpenLink) +
+                                    unsigned(hasPressureOpenLink);
                     if (openTypeCount > 1u)
                         break;
                 }
@@ -1943,9 +1944,6 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             if (hasPressureOpenLink && pressureIndicesPtr != nullptr)
                 pressureIndicesPtr->emplace_back(walberla::Cell(x, y, z));
 
-            const unsigned int openTypeCount = unsigned(hasInletOpenLink) +
-                                               unsigned(hasOutletOpenLink) +
-                                               unsigned(hasPressureOpenLink);
             if (openTypeCount > 1u)
                 ++openBoundaryOverlapFluidLocal;
         }
