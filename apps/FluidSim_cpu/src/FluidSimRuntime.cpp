@@ -500,11 +500,10 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
             const double dM = massInit ? (mass - lastMass) : 0.0;
             const double rhoMean = (fluidVolume > 0.0) ? (mass / fluidVolume) : 0.0;
 
-            auto finite = [](double v) { return std::isfinite(v); };
-            if (!finite(uMaxSq) || !finite(uMax) || !finite(maMax) ||
-                !finite(mlups) || !finite(energy) || !finite(mass) ||
-                !finite(dE) || !finite(dM) || !finite(rhoMean) ||
-                !finite(wrmsY) || !finite(ek))
+            if (!std::isfinite(uMaxSq) || !std::isfinite(uMax) || !std::isfinite(maMax) ||
+                !std::isfinite(mlups) || !std::isfinite(energy) || !std::isfinite(mass) ||
+                !std::isfinite(dE) || !std::isfinite(dM) || !std::isfinite(rhoMean) ||
+                !std::isfinite(wrmsY) || !std::isfinite(ek))
             {
                 WALBERLA_ABORT(
                     "Non-finite diagnostics at step " << step
