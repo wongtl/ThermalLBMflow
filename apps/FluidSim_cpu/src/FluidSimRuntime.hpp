@@ -89,12 +89,6 @@ struct FluidSimRuntimeBindings
     walberla::BlockDataID velocityID;
     walberla::BlockDataID thetaID;
 
-    // Runtime field IDs used by diagnostics/reductions.
-    // CPU: same as main IDs. GPU: device field IDs used by GPU reductions.
-    walberla::BlockDataID densityRuntimeID;
-    walberla::BlockDataID velocityRuntimeID;
-    walberla::BlockDataID thetaRuntimeID;
-
     walberla::BlockDataID cellTypeID;
     walberla::BlockDataID bcIdID;
     walberla::BlockDataID thermalTypeID;

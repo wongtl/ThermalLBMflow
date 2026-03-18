@@ -2786,9 +2786,6 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     binding.densityID = densityID;
     binding.velocityID = velocityID;
     binding.thetaID = thetaID;
-    binding.densityRuntimeID = densityID;
-    binding.velocityRuntimeID = velocityID;
-    binding.thetaRuntimeID = thetaID;
     binding.cellTypeID = cellTypeID;
     binding.bcIdID = bcIdID;
     binding.thermalTypeID = thermalTypeID;
