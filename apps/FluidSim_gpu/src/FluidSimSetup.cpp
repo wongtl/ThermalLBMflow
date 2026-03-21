@@ -1205,6 +1205,9 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
         checkGpuSoA(block.getData<RuntimeField>(velocitySimID));
         checkGpuSoA(block.getData<RuntimeField>(thetaSimID));
         checkGpuSoA(block.getData<RuntimeField>(thetaTmpSimID));
+        checkGpuSoA(block.getData<RuntimeField>(cellTypeSimID));
+        checkGpuSoA(block.getData<RuntimeField>(thermalTypeSimID));
+        checkGpuSoA(block.getData<RuntimeField>(bcIdSimID));
     }
 #else
 #error "FluidSim_gpu requires FLUIDSIM_GPU_BUILD (CUDA) configuration."
