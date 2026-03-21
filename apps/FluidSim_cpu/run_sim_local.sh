@@ -28,11 +28,11 @@ FLAGS=(
     --minimalLogs 1000
     --thermalLogs 100
     --initPerturb 0
-    --vtkinit 0
-    --timesteps 101
+    --vtkinit 1
+    --timesteps 1
     --checkpointEvery 0
-    --vtkevery 100
-    --vtkmeshonly false
+    --vtkevery 0
+    --vtkmeshonly true
 )
 
 # This launcher owns all app runtime flags.

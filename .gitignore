@@ -104,3 +104,5 @@ cmake-workflows.json
 
 # FluidSim runtime outputs
 /apps/storage/
+/apps/FluidSim_cpu/output/logs/run_sim.log
+/apps/shared/geometry/geometry_compat/*.ply
