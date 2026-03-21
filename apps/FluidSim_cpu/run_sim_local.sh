@@ -32,6 +32,7 @@ FLAGS=(
     --timesteps 101
     --checkpointEvery 0
     --vtkevery 100
+    --vtkmeshonly false
 )
 
 # This launcher owns all app runtime flags.

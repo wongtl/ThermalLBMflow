@@ -48,6 +48,7 @@ TIMESTEPS="${TIMESTEPS:-5000001}"
 CHECKPOINT_EVERY="${CHECKPOINT_EVERY:-5000000}"
 VTKEVERY="${VTKEVERY:-5000000}"
 VTKINIT="${VTKINIT:-0}"
+VTKMESHONLY="${VTKMESHONLY:-false}"
 FLUIDSIM_PROFILE_MODE="${FLUIDSIM_PROFILE_MODE:-none}"
 MPI_TRANSPORT_MODE="${MPI_TRANSPORT_MODE:-ob1_stable}"
 
@@ -129,6 +130,15 @@ if [[ "$FLUIDSIM_PROFILE_MODE" == "ncu" ]] && (( SLURM_NTASKS != 1 )); then
     echo "Hint: submit with one GPU/rank, e.g. --gres=gpu:1 --ntasks-per-gpu=1." >&2
     exit 1
 fi
+
+case "$VTKMESHONLY" in
+    0|1|true|false|TRUE|FALSE|True|False)
+        ;;
+    *)
+        echo "ERROR: VTKMESHONLY must be a boolean value (0/1/false/true) (got '$VTKMESHONLY')." >&2
+        exit 1
+        ;;
+esac
 
 SLURM_CPUS_PER_RANK=0
 if [[ "${SLURM_CPUS_PER_TASK:-}" =~ ^[0-9]+$ ]] && (( SLURM_CPUS_PER_TASK >= 1 )); then
@@ -531,11 +541,12 @@ RUN_STARTED=1
 FLAGS=(
     --minimalLogs 1000
     --thermalLogs 100
-    --initPerturb 0.003
+    --initPerturb 0
     --vtkinit "$VTKINIT"
     --timesteps "$TIMESTEPS"
     --checkpointEvery "$CHECKPOINT_EVERY"
     --vtkevery "$VTKEVERY"
+    --vtkmeshonly "$VTKMESHONLY"
 )
 
 # Keep a common mpirun argument shape across CPU/GPU scripts.

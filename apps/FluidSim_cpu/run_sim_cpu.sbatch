@@ -48,6 +48,7 @@ TIMESTEPS="${TIMESTEPS:-1001}"
 CHECKPOINT_EVERY="${CHECKPOINT_EVERY:-0}"
 VTKEVERY="${VTKEVERY:-1000}"
 VTKINIT="${VTKINIT:-0}"
+VTKMESHONLY="${VTKMESHONLY:-false}"
 
 # Paths/state.
 SCRATCH_BASE="${SCRATCH:-${TMPDIR:-/tmp/$USER}}"
@@ -105,6 +106,14 @@ if ! [[ "$VTKINIT" =~ ^[0-9]+$ ]]; then
     echo "ERROR: VTKINIT must be a non-negative integer (got '$VTKINIT')." >&2
     exit 1
 fi
+case "$VTKMESHONLY" in
+    0|1|true|false|TRUE|FALSE|True|False)
+        ;;
+    *)
+        echo "ERROR: VTKMESHONLY must be a boolean value (0/1/false/true) (got '$VTKMESHONLY')." >&2
+        exit 1
+        ;;
+esac
 if ! [[ "$TIMESTEPS" =~ ^[0-9]+$ ]] || (( TIMESTEPS < 1 )); then
     echo "ERROR: TIMESTEPS must be a positive integer (got '$TIMESTEPS')." >&2
     exit 1
@@ -264,6 +273,7 @@ FLAGS=(
     --timesteps "$TIMESTEPS"
     --checkpointEvery "$CHECKPOINT_EVERY"
     --vtkevery "$VTKEVERY"
+    --vtkmeshonly "$VTKMESHONLY"
 )
 
 # Keep a common mpirun argument shape across CPU/GPU scripts.
