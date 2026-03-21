@@ -1195,7 +1195,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     // This is required for coalesced x-major access in custom CUDA kernels.
     for (auto& block : *blocks)
     {
-        auto checkGpuSoA = [](const RuntimeField* f) {
+        auto checkGpuSoA = [](const auto* f) {
             WALBERLA_CHECK_NOT_NULLPTR(f);
             WALBERLA_CHECK_EQUAL(f->layout(), walberla::gpu::fzyx);
             WALBERLA_CHECK_EQUAL(f->xStride(), walberla::cell_idx_t(1));
@@ -1205,9 +1205,9 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
         checkGpuSoA(block.getData<RuntimeField>(velocitySimID));
         checkGpuSoA(block.getData<RuntimeField>(thetaSimID));
         checkGpuSoA(block.getData<RuntimeField>(thetaTmpSimID));
-        checkGpuSoA(block.getData<RuntimeField>(cellTypeSimID));
-        checkGpuSoA(block.getData<RuntimeField>(thermalTypeSimID));
-        checkGpuSoA(block.getData<RuntimeField>(bcIdSimID));
+        checkGpuSoA(block.getData<CellTypeRuntimeField>(cellTypeSimID));
+        checkGpuSoA(block.getData<ThermalTypeRuntimeField>(thermalTypeSimID));
+        checkGpuSoA(block.getData<BcRuntimeField>(bcIdSimID));
     }
 #else
 #error "FluidSim_gpu requires FLUIDSIM_GPU_BUILD (CUDA) configuration."
