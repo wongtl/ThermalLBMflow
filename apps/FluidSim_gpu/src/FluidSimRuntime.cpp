@@ -728,11 +728,39 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
             int x, y, z;
             std::vector<NuVtkWallNeighbor> walls;
         };
+        struct NuVtkFieldBlockRefs
+        {
+            walberla::IBlock* block = nullptr;
+            std::vector<ScalarField*> valueFields;
+            std::vector<ScalarField*> countFields;
+        };
         struct NuVtkBlockRefs
         {
             walberla::IBlock* block = nullptr;
+            std::vector<ScalarField*> valueFields;
+            std::vector<ScalarField*> countFields;
             std::vector<NuVtkFluidCell> cells;
         };
+        std::vector<NuVtkFieldBlockRefs> nuVtkResetBlocks;
+        if (!nuVtkFields.empty())
+        {
+            for (auto& block : *blocks)
+            {
+                const auto& boundaryFluidIndices = boundaryFluidIndexList.getVector(block);
+                if (boundaryFluidIndices.empty())
+                    continue;
+                NuVtkFieldBlockRefs resetBlock;
+                resetBlock.block = &block;
+                resetBlock.valueFields.reserve(nuVtkFields.size());
+                resetBlock.countFields.reserve(nuVtkFields.size());
+                for (const auto& nuField : nuVtkFields)
+                {
+                    resetBlock.valueFields.push_back(block.getData<ScalarField>(nuField.valueFieldID));
+                    resetBlock.countFields.push_back(block.getData<ScalarField>(nuField.countFieldID));
+                }
+                nuVtkResetBlocks.push_back(std::move(resetBlock));
+            }
+        }
         std::vector<NuVtkBlockRefs> nuVtkBlocks;
         if (anyValidNuScale && !nuVtkFields.empty())
         {
@@ -748,6 +776,13 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
                 auto* regionId = block.getData<RegionIdField>(regionIdID);
                 NuVtkBlockRefs nuBlock;
                 nuBlock.block = &block;
+                nuBlock.valueFields.reserve(nuVtkFields.size());
+                nuBlock.countFields.reserve(nuVtkFields.size());
+                for (const auto& nuField : nuVtkFields)
+                {
+                    nuBlock.valueFields.push_back(block.getData<ScalarField>(nuField.valueFieldID));
+                    nuBlock.countFields.push_back(block.getData<ScalarField>(nuField.countFieldID));
+                }
                 for (const auto& idx : boundaryFluidIndices)
                 {
                     const int x = int(idx.x);
@@ -789,23 +824,15 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
         auto updateNuFieldsForVtk = [&,
              nuScaleBySlot = std::move(nuScaleBySlot),
              nuValueResetBySlot = std::move(nuValueResetBySlot),
+             nuVtkResetBlocks = std::move(nuVtkResetBlocks),
              nuVtkBlocks = std::move(nuVtkBlocks)]() {
             if (nuVtkFields.empty())
                 return;
 
             // Reset pass: set all boundary fluid cells' Nu fields to NaN/0.
-            for (auto& block : *blocks)
+            for (const auto& resetBlock : nuVtkResetBlocks)
             {
-                const auto& boundaryFluidIndices = boundaryFluidIndexList.getVector(block);
-                if (boundaryFluidIndices.empty())
-                    continue;
-                std::vector<ScalarField*> nuValueFieldPtrs(nuVtkFields.size(), nullptr);
-                std::vector<ScalarField*> nuCountFieldPtrs(nuVtkFields.size(), nullptr);
-                for (size_t slot = size_t(0); slot < nuVtkFields.size(); ++slot)
-                {
-                    nuValueFieldPtrs[slot] = block.getData<ScalarField>(nuVtkFields[slot].valueFieldID);
-                    nuCountFieldPtrs[slot] = block.getData<ScalarField>(nuVtkFields[slot].countFieldID);
-                }
+                const auto& boundaryFluidIndices = boundaryFluidIndexList.getVector(*resetBlock.block);
                 for (const auto& idx : boundaryFluidIndices)
                 {
                     const int x = int(idx.x);
@@ -813,8 +840,8 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
                     const int z = int(idx.z);
                     for (size_t slot = size_t(0); slot < nuVtkFields.size(); ++slot)
                     {
-                        (*nuValueFieldPtrs[slot])(x, y, z, 0) = nuValueResetBySlot[slot];
-                        (*nuCountFieldPtrs[slot])(x, y, z, 0) = real_t(0);
+                        (*resetBlock.valueFields[slot])(x, y, z, 0) = nuValueResetBySlot[slot];
+                        (*resetBlock.countFields[slot])(x, y, z, 0) = real_t(0);
                     }
                 }
             }
@@ -822,28 +849,21 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
             // Compute pass: iterate only pre-computed Nu-relevant fluid cells.
             for (const auto& nuBlock : nuVtkBlocks)
             {
-                std::vector<ScalarField*> nuValueFieldPtrs(nuVtkFields.size(), nullptr);
-                std::vector<ScalarField*> nuCountFieldPtrs(nuVtkFields.size(), nullptr);
-                for (size_t slot = size_t(0); slot < nuVtkFields.size(); ++slot)
-                {
-                    nuValueFieldPtrs[slot] = nuBlock.block->getData<ScalarField>(nuVtkFields[slot].valueFieldID);
-                    nuCountFieldPtrs[slot] = nuBlock.block->getData<ScalarField>(nuVtkFields[slot].countFieldID);
-                }
                 auto* theta = nuBlock.block->getData<ScalarField>(thetaID);
                 for (const auto& cell : nuBlock.cells)
                 {
                     const double thetaFluid = double((*theta)(cell.x, cell.y, cell.z, 0));
                     for (const auto& wall : cell.walls)
                     {
-                        (*nuValueFieldPtrs[wall.slot])(cell.x, cell.y, cell.z, 0) +=
+                        (*nuBlock.valueFields[wall.slot])(cell.x, cell.y, cell.z, 0) +=
                             real_t(nuFacePrimitive(double(wall.thermalValue), thetaFluid, 1.0) * nuScaleBySlot[wall.slot]);
-                        (*nuCountFieldPtrs[wall.slot])(cell.x, cell.y, cell.z, 0) += real_t(1);
+                        (*nuBlock.countFields[wall.slot])(cell.x, cell.y, cell.z, 0) += real_t(1);
                     }
                     for (size_t slot = size_t(0); slot < nuVtkFields.size(); ++slot)
                     {
-                        const real_t count = (*nuCountFieldPtrs[slot])(cell.x, cell.y, cell.z, 0);
+                        const real_t count = (*nuBlock.countFields[slot])(cell.x, cell.y, cell.z, 0);
                         if (count > real_t(0))
-                            (*nuValueFieldPtrs[slot])(cell.x, cell.y, cell.z, 0) /= count;
+                            (*nuBlock.valueFields[slot])(cell.x, cell.y, cell.z, 0) /= count;
                     }
                 }
             }
