@@ -9,7 +9,7 @@ MeshGeometry
     Region
     {
         name "container";
-        meshFile "geometry/cube_rbc.PLY";
+        meshFile "geometry/LZModel_FullScale.PLY";
         role "FLUID_CONTAINER";
         // Mesh file is in mm; convert to meters.
         scale 0.001;
@@ -23,7 +23,7 @@ MeshGeometry
     //     role "SOLID_OBSTACLE";
     //      // Mesh file is in mm; convert to meters.
     //     scale 0.001;
-    //     translate < 0, -0.2, 0 >;
+    //     translate < 0, 0, 0 >;
     // }
 
     // Required free margin (in fine cells) between mesh and each domain boundary (x,y,z).
@@ -32,25 +32,21 @@ MeshGeometry
 
 Physical
 {
-    // LXe @ ~170.25 K (constant-property).
-    // nu_phys    1.5946476e-7;   // m^2/s
-    // alpha_phys 7.0890653e-8;   // m^2/s
-    // k_phys     0.07022802837;  // W/(m*K)
-    // beta       2.322e-3;       // 1/K
-
-    // Active setup with LXe properties and Ra tuned via Ra_factor.
-    nu_phys    1.5946476e-7;   // m^2/s
-    alpha_phys 7.0890653e-8;   // m^2/s
-    k_phys     0.07022802837;  // W/(m*K)
+    // LXe near saturation at 176.41 K.
+    // nu_phys = mu / rho using mu = 4.1646e-4 Pa*s and rho = 2864.9 kg/m^3.
+    // alpha_phys kept consistent with k_phys, rho, and cp using cp = 343.14 J/(kg*K).
+    nu_phys    1.453663304129289e-7;   // m^2/s
+    alpha_phys 7.14380615441805e-8;    // m^2/s
+    k_phys     0.07022802837;          // W/(m*K)
     beta       2.322e-3;       // 1/K
     
     // Physical domain size (meters).
-    domain_size   < 1, 1, 1 >; // interior physical size (excluding computational padding)
-    fluid_height  1;         // characteristic fluid height used in Ra/buoyancy scaling
-    deltaT_K      0.1;
-    g             9.81;        // m/s^2
+    domain_size   < 1.460, 1.700, 1.460 >; // 5 mm cells, sized to fit LZModel_FullScale interior
+    fluid_height  1.6985;                  // physical LXe height from the full-scale mesh (m)
+    deltaT_K      2.25;                    // interface (176.41 K) - inlet (174.16 K)
+    g             9.81;        // m/s^2 (solver uses positive magnitude for upward buoyancy of hot fluid)
     // manual scale factor applied to Ra and buoyancy forcing
-    Ra_factor 0;
+    Ra_factor 1e-7;
 }
 
 Resolution
@@ -59,9 +55,9 @@ Resolution
     // Total lattice cells are derived as: interiorFineCells + 2 * MeshGeometry.paddingCells.
     // Physical.full_size is derived from domain_size and total lattice cells.
     // Total lattice cells must match Physical.full_size aspect ratio and be divisible by cellsPerBlock.
-    interiorFineCells < 200, 200, 200 >;
+    interiorFineCells < 292, 340, 292 >;
     // Cells per block in x/y/z.
-    cellsPerBlock < 202, 202, 202 >;
+    cellsPerBlock < 294, 342, 294 >;
     // Number of blocks should be divisible by ntasks for proper performance.
 }
 
@@ -83,22 +79,15 @@ Parameters
 
     // Reference theta_ref (dimensionless):
     // - used as a fixed constant only when theta_update == 0
-    // - when theta_update > 0, theta_ref is computed at startup (and periodically)
-    //   from the domain average
+    // - when theta_update > 0, computed at startup (and periodically) from the domain average
     theta_ref 0.0;
 
-    // Update frequency for global theta_ref reduction (0 => fixed theta_ref = theta_ref).
+    // Update frequency for global theta_ref reduction.
     theta_update 100;
 }
 
 ColorBC
 {
-    // thermal options:
-    //   DIRICHLET<N> / ADIABATIC<N> / HEATLOAD<N>:
-    //     thermal type is inferred from region name prefix (thermal field assumed).
-    //   INLET<N> / OUTLET<N> / PRESSURE<N>:
-    //     thermal must be provided explicitly as "Dirichlet" or "Adiabatic".
-    //
     // region name semantics:
     //   DIRICHLET<N> / ADIABATIC<N> / HEATLOAD<N> / INLET<N> / OUTLET<N> / PRESSURE<N>
     //   where <N> is a positive integer suffix (not empty, not all zeros).
@@ -135,29 +124,57 @@ ColorBC
 
     Region
     {
-        enabled false;
+        enabled true;
         name "DIRICHLET1";
-        rgb < 255, 0, 0 >;
-        theta 1.0;
-        L_char 0.3;
-        Nu true;
+        rgb < 0, 255, 255 >;
+        theta 0.0;
+        L_char 1.6985;
+        Nu false;
     }
 
     Region
     {
-        enabled true;
+        enabled false;
         name "DIRICHLET2";
         rgb < 0, 0, 255 >;
         theta 0.0;
-        L_char 0.3;
-        Nu true;
+        L_char 1.6985;
+        Nu false;
     }
 
     Region
     {
         enabled true;
         name "ADIABATIC1";
-        rgb < 0, 255, 0 >;
+        rgb < 255, 0, 255 >;
+    }
+
+    Region
+    {
+        enabled false;
+        name "DIRICHLET3";
+        rgb < 0, 255, 255 >;
+        theta 0.0;
+        L_char 1.6985;
+        Nu false;
+    }
+
+    Region
+    {
+        enabled false;
+        name "ADIABATIC2";
+        rgb < 255, 0, 255 >;
+    }
+
+    Region
+    {
+        enabled true;
+        name "INLET1";
+        rgb < 255, 0, 0 >;
+        velocity < 0, 0.040971546304114405, 0 >;
+        rho 1.0;
+        thermal "Dirichlet";
+        theta -1.0;
     }
 
     // heatload_watts [W/m^2]
@@ -165,18 +182,26 @@ ColorBC
     {
         enabled true;
         name "HEATLOAD1";
-        rgb < 255, 0, 0 >;
-        heatload_watts 500;
+        rgb < 0, 255, 0 >;
+        heatload_watts 1.2;
     }
 
     Region
     {
-        enabled false;
+        enabled true;
+        name "HEATLOAD2";
+        rgb < 255, 255, 0 >;
+        heatload_watts 694.6;
+    }
+
+    Region
+    {
+        enabled true;
         name "PRESSURE1";
         rgb < 0, 0, 255 >;
         flow "out";
         rho 1.0;
-        thermal "Dirichlet";
+        thermal "Adiabatic";
         theta 0.0;
     }
 }
