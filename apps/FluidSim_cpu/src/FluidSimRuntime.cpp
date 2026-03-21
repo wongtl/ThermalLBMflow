@@ -421,7 +421,8 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
         const double updatesPerCoarseStep = walberla::mpi::allReduce(updatesPerCoarseStepLocal, walberla::mpi::SUM);
         const double fluidVolume = walberla::mpi::allReduce(fluidVolumeLocal, walberla::mpi::SUM);
 
-        loop.addFuncAfterTimeStep([&, updatesPerCoarseStep, fluidVolume,
+        const int worldRank = walberla::mpi::MPIManager::instance()->worldRank();
+        loop.addFuncAfterTimeStep([&, updatesPerCoarseStep, fluidVolume, worldRank,
                                       energyInit = false,
                                       massInit = false,
                                       lastTime = std::chrono::steady_clock::now(),
@@ -432,13 +433,36 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
             if (!cadenceDue(step, minimalLogCadence, false))
                 return;
 
+            const auto abortOnNonFiniteLocalState = [&](const char* blockKind,
+                                                        size_t blockIndex,
+                                                        int x,
+                                                        int y,
+                                                        int z,
+                                                        double rho,
+                                                        double ux,
+                                                        double uy,
+                                                        double uz,
+                                                        double theta) {
+                WALBERLA_ABORT("Non-finite rho/velocity/theta detected by CPU minimal diagnostics reduction at step "
+                               << step << " on rank " << worldRank
+                               << " in " << blockKind << " block " << blockIndex
+                               << " at cell (" << x << ", " << y << ", " << z << ")"
+                               << " (rho=" << rho
+                               << ", ux=" << ux
+                               << ", uy=" << uy
+                               << ", uz=" << uz
+                               << ", theta=" << theta
+                               << "). Aborting (fail-fast).");
+            };
+
             double uMaxSqLocal = 0.0;
             double uySqVolumeLocal = 0.0;
             double uSqVolumeLocal = 0.0;
             double energyLocal = 0.0;
             double massLocal = 0.0;
-            for (auto* block : fullFluidBlocks)
+            for (size_t blockIndex = size_t(0); blockIndex < fullFluidBlocks.size(); ++blockIndex)
             {
+                auto* block = fullFluidBlocks[blockIndex];
                 auto* u = block->getData<VecField>(velocityID);
                 auto* theta = block->getData<ScalarField>(thetaID);
                 auto* rho = block->getData<ScalarField>(densityID);
@@ -451,16 +475,24 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
                     const double ux = (*u)(x, y, z, 0);
                     const double uy = (*u)(x, y, z, 1);
                     const double uz = (*u)(x, y, z, 2);
+                    const double thetaValue = double((*theta)(x, y, z, 0));
+                    const double rhoValue = double((*rho)(x, y, z, 0));
+                    if (!std::isfinite(ux) || !std::isfinite(uy) || !std::isfinite(uz) || !std::isfinite(thetaValue) ||
+                        !std::isfinite(rhoValue))
+                    {
+                        abortOnNonFiniteLocalState("full-fluid", blockIndex, x, y, z, rhoValue, ux, uy, uz, thetaValue);
+                    }
                     const double uSq = ux * ux + uy * uy + uz * uz;
                     uMaxSqLocal = std::max(uMaxSqLocal, uSq);
                     uySqVolumeLocal += (uy * uy);
                     uSqVolumeLocal += uSq;
-                    energyLocal += double((*theta)(x, y, z, 0));
-                    massLocal += double((*rho)(x, y, z, 0));
+                    energyLocal += thetaValue;
+                    massLocal += rhoValue;
                 }
             }
-            for (auto* block : mixedBlocks)
+            for (size_t blockIndex = size_t(0); blockIndex < mixedBlocks.size(); ++blockIndex)
             {
+                auto* block = mixedBlocks[blockIndex];
                 auto* u = block->getData<VecField>(velocityID);
                 auto* theta = block->getData<ScalarField>(thetaID);
                 auto* rho = block->getData<ScalarField>(densityID);
@@ -473,12 +505,19 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
                     const double ux = (*u)(x, y, z, 0);
                     const double uy = (*u)(x, y, z, 1);
                     const double uz = (*u)(x, y, z, 2);
+                    const double thetaValue = double((*theta)(x, y, z, 0));
+                    const double rhoValue = double((*rho)(x, y, z, 0));
+                    if (!std::isfinite(ux) || !std::isfinite(uy) || !std::isfinite(uz) || !std::isfinite(thetaValue) ||
+                        !std::isfinite(rhoValue))
+                    {
+                        abortOnNonFiniteLocalState("mixed", blockIndex, x, y, z, rhoValue, ux, uy, uz, thetaValue);
+                    }
                     const double uSq = ux * ux + uy * uy + uz * uz;
                     uMaxSqLocal = std::max(uMaxSqLocal, uSq);
                     uySqVolumeLocal += (uy * uy);
                     uSqVolumeLocal += uSq;
-                    energyLocal += double((*theta)(x, y, z, 0));
-                    massLocal += double((*rho)(x, y, z, 0));
+                    energyLocal += thetaValue;
+                    massLocal += rhoValue;
                 }
             }
 
