@@ -173,6 +173,7 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
     const uint_t checkpointCadence = cmd.checkpointEvery;
     const uint_t vtkWriteFrequency = binding.vtkWriteFrequency;
     const bool vtkWriteAtStepZero = cmd.vtkInit;
+    const bool vtkMeshOnly = cmd.vtkMeshOnly;
     auto cadenceDue = [&](uint_t step, uint_t cadence, bool includeZero) -> bool {
         if (cadence == uint_t(0))
             return false;
@@ -870,27 +871,33 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
             uint_t(0),
             false,
             false);
-        vtkOutput->addCellDataWriter(
-            std::make_shared<walberla::field::VTKWriter<ScalarField, walberla::float32>>(densityID, "density"));
-        vtkOutput->addCellDataWriter(
-            std::make_shared<walberla::field::VTKWriter<VecField, walberla::float32>>(velocityID, "velocity"));
-        vtkOutput->addCellDataWriter(
-            std::make_shared<walberla::field::VTKWriter<ScalarField, walberla::float32>>(thetaID, "theta"));
+        if (!vtkMeshOnly)
+        {
+            vtkOutput->addCellDataWriter(
+                std::make_shared<walberla::field::VTKWriter<ScalarField, walberla::float32>>(densityID, "density"));
+            vtkOutput->addCellDataWriter(
+                std::make_shared<walberla::field::VTKWriter<VecField, walberla::float32>>(velocityID, "velocity"));
+            vtkOutput->addCellDataWriter(
+                std::make_shared<walberla::field::VTKWriter<ScalarField, walberla::float32>>(thetaID, "theta"));
+        }
         vtkOutput->addCellDataWriter(std::make_shared<walberla::field::VTKWriter<CellTypeField>>(cellTypeID, "cellType"));
         vtkOutput->addCellDataWriter(std::make_shared<walberla::field::VTKWriter<BcField>>(bcIdID, "bcId"));
-        for (const auto& nuField : nuVtkFields)
-            vtkOutput->addCellDataWriter(
-                std::make_shared<walberla::field::VTKWriter<ScalarField, walberla::float32>>(
-                    nuField.valueFieldID,
-                    "Nu_" + nuOutputLabelFromRegionName(nuField.regionName)));
-        loop.addFuncAfterTimeStep([&, vtkStepDue, updateNuFieldsForVtk]() {
-            const uint_t step = loop.getCurrentTimeStep();
-            if (!vtkStepDue(step))
-                return;
-            // VTK uses density/velocity/theta + derived Nu fields; syncing PDFs here is unnecessary overhead.
-            ensureHostState(step, HostSyncScope::RhoVelTheta);
-            updateNuFieldsForVtk();
-        }, "NuFieldForVTK");
+        if (!vtkMeshOnly)
+        {
+            for (const auto& nuField : nuVtkFields)
+                vtkOutput->addCellDataWriter(
+                    std::make_shared<walberla::field::VTKWriter<ScalarField, walberla::float32>>(
+                        nuField.valueFieldID,
+                        "Nu_" + nuOutputLabelFromRegionName(nuField.regionName)));
+            loop.addFuncAfterTimeStep([&, vtkStepDue, updateNuFieldsForVtk]() {
+                const uint_t step = loop.getCurrentTimeStep();
+                if (!vtkStepDue(step))
+                    return;
+                // VTK uses density/velocity/theta + derived Nu fields; syncing PDFs here is unnecessary overhead.
+                ensureHostState(step, HostSyncScope::RhoVelTheta);
+                updateNuFieldsForVtk();
+            }, "NuFieldForVTK");
+        }
         loop.addFuncAfterTimeStep([&, vtkStepDue, vtkOutput]() {
             const uint_t step = loop.getCurrentTimeStep();
             if (!vtkStepDue(step))

@@ -77,6 +77,7 @@ struct CmdOptions
     uint_t checkpointEvery = 0;
     uint_t vtkEvery = 0;
     bool vtkInit = false;
+    bool vtkMeshOnly = false;
     ParallelMode parallelMode = ParallelMode::Outer;
 };
 
@@ -440,6 +441,11 @@ static CmdOptions parseArgs(int argc, char** argv)
         {
             if (i + 1 >= argc) WALBERLA_ABORT("--vtkinit requires a boolean value (0/1/false/true)");
             cmd.vtkInit = parseBoolOrAbort("--vtkinit", argv[++i]);
+        }
+        else if (a == "--vtkmeshonly")
+        {
+            if (i + 1 >= argc) WALBERLA_ABORT("--vtkmeshonly requires a boolean value (0/1/false/true)");
+            cmd.vtkMeshOnly = parseBoolOrAbort("--vtkmeshonly", argv[++i]);
         }
         else if (a == "--parallelMode")
         {
