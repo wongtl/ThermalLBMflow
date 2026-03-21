@@ -151,8 +151,8 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
     const bool vtkWriteAtStepZero = cmd.vtkInit;
     const bool vtkMeshOnly = cmd.vtkMeshOnly;
     auto cadenceDue = [&](uint_t step, uint_t cadence, bool includeZero) -> bool {
-        if (includeZero && step == uint_t(0))
-            return true;
+        if (step == uint_t(0))
+            return includeZero;
         if (cadence == uint_t(0))
             return false;
         return (step % cadence) == uint_t(0);
