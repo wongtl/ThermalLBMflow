@@ -518,10 +518,8 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             std::max(meshAabbUnscaled.yMax(), aabb.yMax()),
             std::max(meshAabbUnscaled.zMax(), aabb.zMax()));
     }
-    const real_t meshSpanX = meshAabbUnscaled.xSize();
-    const real_t meshSpanY = meshAabbUnscaled.ySize();
-    const real_t meshSpanZ = meshAabbUnscaled.zSize();
-    if (meshSpanX <= real_t(0) || meshSpanY <= real_t(0) || meshSpanZ <= real_t(0))
+    if (meshAabbUnscaled.xSize() <= real_t(0) || meshAabbUnscaled.ySize() <= real_t(0) ||
+        meshAabbUnscaled.zSize() <= real_t(0))
         WALBERLA_ABORT("Mesh has non-positive extent in at least one direction.");
 
     if ((fineDomainCells[0] % cellsPerBlock[0]) != uint_t(0) ||
