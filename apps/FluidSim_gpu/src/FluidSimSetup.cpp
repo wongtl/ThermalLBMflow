@@ -1994,8 +1994,10 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     bool strictDeviceProbePassed = false;
     int strictDeviceProbeFirstRc = MPI_SUCCESS;
 
-    // Always probe device-buffer MPI support at runtime; single-rank runs may continue
-    // without it, but multi-rank runs require it.
+    // Strict device-buffer MPI probing is only reliable when a real inter-rank path
+    // exists. Single-rank self transport can crash on some MPI/UCX stacks when given
+    // device pointers, so keep the strict probe for multi-rank runs only.
+    if (requireGpuDirectMpi)
     {
         strictDeviceProbeRan = true;
         constexpr int kProbeWordCount = 32;
@@ -2120,9 +2122,8 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
 
     if (!cudaAwareMpiAvailable && isRoot && mpiWorldSize == 1)
         WALBERLA_LOG_INFO(
-            "CUDA-aware MPI/device-buffer MPI is not available after runtime checks;"
-            " MPI world size == 1 is allowed. Multi-rank runs require successful"
-            " strict device-buffer MPI probing at startup.");
+            "CUDA-aware MPI not detected by MPIX precheck; MPI world size == 1 is allowed."
+            " Multi-rank runs will require strict device-buffer MPI probing at startup.");
 
     (*runtimePdfThetaComm)();
     (*runtimeThetaInitComm)();
