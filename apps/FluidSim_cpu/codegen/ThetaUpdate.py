@@ -109,23 +109,6 @@ with SourceFileGenerator(keep_unknown_argv=True) as sfg:
 
         raise ValueError("Invalid D3Q19 direction.")
 
-    # Regularization helper for nonequilibrium moments.
-    def regularized_noneq(cx, cy, cz, pixx, piyy, pizz, pixy, pixz, piyz):
-        cs2 = sp.Rational(1, 3)
-        inv_2_cs4 = sp.Rational(9, 2)
-        cxr = sp.Integer(cx)
-        cyr = sp.Integer(cy)
-        czr = sp.Integer(cz)
-        q_contract_pi = (
-            (cxr * cxr - cs2) * pixx
-            + (cyr * cyr - cs2) * piyy
-            + (czr * czr - cs2) * pizz
-            + sp.Integer(2) * cxr * cyr * pixy
-            + sp.Integer(2) * cxr * czr * pixz
-            + sp.Integer(2) * cyr * czr * piyz
-        )
-        return d3q19_weight(cx, cy, cz) * inv_2_cs4 * q_contract_pi
-
     # Fields and symbols.
     theta, theta_tmp = ps.fields(f"theta, theta_tmp: {dtype}[3D]", layout="fzyx")
     u = ps.fields(f"u(3): {dtype}[3D]", layout="fzyx")
