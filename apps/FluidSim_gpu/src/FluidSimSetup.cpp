@@ -1953,9 +1953,10 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     runtimeCudaAwareSupport = MPIX_Query_cuda_support();
 #endif
 
-    bool cudaAwareMpiAvailable = compileTimeCudaAwareMpiAvailable;
+    bool cudaAwareMpiReported = compileTimeCudaAwareMpiAvailable;
     if (runtimeCudaAwareQueryAvailable)
-        cudaAwareMpiAvailable = cudaAwareMpiAvailable && (runtimeCudaAwareSupport != 0);
+        cudaAwareMpiReported = cudaAwareMpiReported && (runtimeCudaAwareSupport != 0);
+    bool cudaAwareMpiUsable = cudaAwareMpiReported;
 
     auto mpiErrorToString = [&](int rc) -> std::string {
         char errString[MPI_MAX_ERROR_STRING] = {};
@@ -2079,7 +2080,21 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             MPI_Allreduce(
                 &localOk, &globalOk, 1, MPI_INT, MPI_MIN, walberla::mpi::MPIManager::instance()->comm()));
         strictDeviceProbePassed = (globalOk == 1);
-        cudaAwareMpiAvailable = strictDeviceProbePassed;
+        cudaAwareMpiUsable = strictDeviceProbePassed;
+
+        if (!cudaAwareMpiUsable)
+        {
+            WALBERLA_ABORT("CUDA-aware MPI is required for multi-rank runs (worldSize=" << mpiWorldSize
+                           << "), but direct device-buffer MPI probing failed."
+                           << " compile_support=" << (compileTimeCudaAwareMpiAvailable ? 1 : 0)
+                           << " runtime_query_available=" << (runtimeCudaAwareQueryAvailable ? 1 : 0)
+                           << " runtime_query_support=" << runtimeCudaAwareSupport
+                           << " device_probe_ran=" << (strictDeviceProbeRan ? 1 : 0)
+                           << " device_probe_passed=" << (strictDeviceProbePassed ? 1 : 0)
+                           << " device_probe_first_rc=" << strictDeviceProbeFirstRc
+                           << " device_probe_first_err='" << mpiErrorToString(strictDeviceProbeFirstRc) << "'."
+                           << " Ensure CUDA-aware MPI/device-pointer MPI is available for this MPI stack.");
+        }
     }
 
     if (isRoot)
@@ -2090,26 +2105,15 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                          << " runtime_query_support=" << runtimeCudaAwareSupport
                          << " device_probe_ran=" << (strictDeviceProbeRan ? 1 : 0)
                          << " device_probe_passed=" << (strictDeviceProbePassed ? 1 : 0)
-                         << " effective=" << (cudaAwareMpiAvailable ? 1 : 0));
+                         << " reported=" << (cudaAwareMpiReported ? 1 : 0)
+                         << " usable=" << (cudaAwareMpiUsable ? 1 : 0));
         WALBERLA_LOG_INFO("MPI runtime: std=" << mpiVersionMajor << "." << mpiVersionMinor
                          << " library=\"" << std::string(mpiLibraryVersion, mpiLibraryVersionSafeLen) << "\"");
     }
 
-    if (requireGpuDirectMpi && !cudaAwareMpiAvailable)
-    {
-        WALBERLA_ABORT("CUDA-aware MPI is required for multi-rank runs (worldSize=" << mpiWorldSize
-                       << "), but direct device-buffer MPI probing failed."
-                       << " compile_support=" << (compileTimeCudaAwareMpiAvailable ? 1 : 0)
-                       << " runtime_query_available=" << (runtimeCudaAwareQueryAvailable ? 1 : 0)
-                       << " runtime_query_support=" << runtimeCudaAwareSupport
-                       << " device_probe_ran=" << (strictDeviceProbeRan ? 1 : 0)
-                       << " device_probe_passed=" << (strictDeviceProbePassed ? 1 : 0)
-                       << " device_probe_first_rc=" << strictDeviceProbeFirstRc
-                       << " device_probe_first_err='" << mpiErrorToString(strictDeviceProbeFirstRc) << "'."
-                       << " Ensure CUDA-aware MPI/device-pointer MPI is available for this MPI stack.");
-    }
-
-    const bool useGpuDirectComm = (mpiWorldSize > 1) ? true : cudaAwareMpiAvailable;
+    // Multi-rank: strict probe validated GPU direct (and aborted if it failed).
+    // Single-rank: host packing always; UCX self-transport cannot handle device pointers.
+    const bool useGpuDirectComm = requireGpuDirectMpi;
     auto runtimePdfThetaComm = std::make_shared<RuntimeGpuCommScheme>(blocks, useGpuDirectComm, true, 2301);
     // Phase-2: runtime CommStart/CommWait carries PDFs only.
     runtimePdfThetaComm->addPackInfo(std::make_shared<RuntimeGpuPackInfo>(pdfSimID));
@@ -2120,10 +2124,8 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     auto runtimeThetaInitComm = std::make_shared<RuntimeGpuThetaTmpCommScheme>(blocks, useGpuDirectComm, true, 2303);
     runtimeThetaInitComm->addPackInfo(std::make_shared<RuntimeGpuPackInfo>(thetaSimID));
 
-    if (!cudaAwareMpiAvailable && isRoot && mpiWorldSize == 1)
-        WALBERLA_LOG_INFO(
-            "CUDA-aware MPI not detected by MPIX precheck; MPI world size == 1 is allowed."
-            " Multi-rank runs will require strict device-buffer MPI probing at startup.");
+    if (isRoot)
+        WALBERLA_LOG_INFO("GPU comm: use_gpu_direct=" << (useGpuDirectComm ? 1 : 0));
 
     (*runtimePdfThetaComm)();
     (*runtimeThetaInitComm)();
