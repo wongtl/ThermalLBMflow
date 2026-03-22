@@ -134,35 +134,8 @@ ColorBC
 
     Region
     {
-        enabled false;
-        name "DIRICHLET2";
-        rgb < 0, 0, 255 >;
-        theta 0.0;
-        L_char 1.6985;
-        Nu false;
-    }
-
-    Region
-    {
         enabled true;
         name "ADIABATIC1";
-        rgb < 255, 0, 255 >;
-    }
-
-    Region
-    {
-        enabled false;
-        name "DIRICHLET3";
-        rgb < 0, 255, 255 >;
-        theta 0.0;
-        L_char 1.6985;
-        Nu false;
-    }
-
-    Region
-    {
-        enabled false;
-        name "ADIABATIC2";
         rgb < 255, 0, 255 >;
     }
 

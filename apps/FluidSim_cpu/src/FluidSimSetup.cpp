@@ -5,6 +5,7 @@
 
 #include "blockforest/communication/UniformBufferedScheme.h"
 #include "field/FileIO.h"
+#include "vtk/VTKOutput.h"
 #include "mesh/boundary/BoundaryInfo.h"
 #include "mesh/boundary/BoundaryLocation.h"
 #include "mesh_common/MatrixVectorOperations.h"
@@ -1693,6 +1694,36 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
         WALBERLA_LOG_INFO(geomLine.str());
         if (noneBoundarySolidGlobal > 0) WALBERLA_LOG_WARNING("Boundary solid cells with bcId==NONE: " << noneBoundarySolidGlobal);
         if (fluidOnDomainBoundaryGlobal > 0) WALBERLA_LOG_WARNING("Fluid cells on domain boundary: " << fluidOnDomainBoundaryGlobal);
+    }
+
+    // vtkMeshOnly early exit: cellType and bcId are fully classified; skip all remaining
+    // setup (SparseCellIndexList, no-slip links, etc.) and write the mesh only.
+    if (cmd.vtkMeshOnly)
+    {
+        WALBERLA_ROOT_SECTION()
+        {
+            ensureDirectory(std::filesystem::path(kOutputBaseDir) / kVtkDirName,
+                            "create vtk output directory (vtkMeshOnly)");
+        }
+        WALBERLA_MPI_SECTION()
+        {
+            MPI_Barrier(walberla::mpi::MPIManager::instance()->comm());
+        }
+        auto vtkOutput = walberla::vtk::createVTKOutput_BlockData(
+            *blocks, kVtkDirName, uint_t(1), uint_t(0), true,
+            kOutputBaseDir, "simulation_step", false, true, true, false, uint_t(0), false, false);
+        vtkOutput->addCellDataWriter(
+            std::make_shared<walberla::field::VTKWriter<CellTypeField>>(cellTypeID, "cellType"));
+        vtkOutput->addCellDataWriter(
+            std::make_shared<walberla::field::VTKWriter<BcField>>(bcIdID, "bcId"));
+        vtkOutput->forceWrite(uint_t(0));
+        WALBERLA_MPI_SECTION()
+        {
+            MPI_Barrier(walberla::mpi::MPIManager::instance()->comm());
+        }
+        if (isRoot)
+            WALBERLA_LOG_INFO("vtkMeshOnly: mesh written, exiting.");
+        return 0;
     }
 
     // Thermal initialization and optional deterministic perturbation.
