@@ -1720,7 +1720,6 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             if (mapping.found)
             {
                 if (!hasFaceFluidNeighbor &&
-                    mapping.bcId != BC_INLET &&
                     mapping.bcId != BC_OUTLET &&
                     mapping.bcId != BC_PRESSURE)
                     continue;

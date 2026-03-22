@@ -1537,7 +1537,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             nearestRegionHint = mapping.nearestRegionIdx;
             if (mapping.found)
             {
-                if (!hasFaceFluidNeighbor && mapping.bcId != BC_INLET && mapping.bcId != BC_OUTLET && mapping.bcId != BC_PRESSURE)
+                if (!hasFaceFluidNeighbor && mapping.bcId != BC_OUTLET && mapping.bcId != BC_PRESSURE)
                     continue;
                 (*bcId)(x, y, z, 0) = mapping.bcId;
                 (*regionId)(x, y, z, 0) = mapping.regionId;
