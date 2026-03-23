@@ -16,6 +16,11 @@ if( NOT WALBERLA_ENABLE_SWEEPGEN )
     return()
 endif()
 
+if( NOT WALBERLA_BUILD_WITH_OPENMESH )
+    message(STATUS "FluidSim_gpu requires WALBERLA_BUILD_WITH_OPENMESH=ON - skipping")
+    return()
+endif()
+
 # Source generation configuration.
 set( _fluidsim_target FluidSim_gpu )
 set( _fluidsim_codegen_suffixes hpp cu )
