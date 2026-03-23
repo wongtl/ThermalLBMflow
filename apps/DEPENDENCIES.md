@@ -2,10 +2,9 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 # ThermalLBMflow — Third-Party Dependencies
 
-Versions below describe the current tested setup used by the FluidSim build and
-code-generation scripts. The pycodegen packages are installed from upstream
-development branches and/or an editable local checkout, so treat those versions
-as tested snapshots rather than strict release pins.
+Versions below describe the exact tested setup provisioned by
+`apps/shared/scripts/install_codegen_venv.sh` for the FluidSim build and
+code-generation scripts.
 
 ## Core runtime/build dependencies
 
@@ -20,14 +19,22 @@ as tested snapshots rather than strict release pins.
 
 | Dependency | Version policy | License | Usage |
 |---|---|---|---|
-| `walberla-sweepgen` (`sweepgen/`) | editable install from the current waLBerla checkout | GPL-3.0-or-later | waLBerla-integrated code-generation orchestration |
-| [pystencils](https://pycodegen.pages.i10git.cs.fau.de/pystencils/) | `v2.0-dev` branch, tested: `2.0.dev0+170.ga13c5b1` | GPL-3.0-or-later | Stencil kernel generation |
-| [lbmpy](https://pycodegen.pages.i10git.cs.fau.de/lbmpy/) | upstream `master`, tested: `1.4+2.gfada994` | GPL-3.0-or-later | LBM collision operators and boundary conditions |
-| `pystencilssfg` | tested: `0.1a4+59.gc635a76` | GPL-3.0-or-later | Source-file generation backend used by `sweepgen` |
-| `numpy` | tested: `2.4.2` | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | Numerical dependency used by the pycodegen stack |
-| `sympy` | tested: `1.14.0` | BSD | Symbolic algebra for code generation |
-| `Jinja2` | tested: `3.1.6` | BSD-3-Clause | Template rendering used by codegen tooling |
-| `py-cpuinfo` | `>= 9.0`, tested: `9.0.0` | MIT | Host capability helper required by `sweepgen` |
+| `walberla-sweepgen` (`sweepgen/`) | editable install from the current waLBerla checkout, tested: `7.2+61.gfa0eaab29` | GPL-3.0-or-later | waLBerla-integrated code-generation orchestration |
+| [pystencils](https://pycodegen.pages.i10git.cs.fau.de/pystencils/) | pinned public Git commit `a13c5b1c71c924b0d58c1a343ac9780015786edd`, version `2.0.dev0+170.ga13c5b1` | GPL-3.0-or-later | Stencil kernel generation |
+| [lbmpy](https://pycodegen.pages.i10git.cs.fau.de/lbmpy/) | pinned public Git commit `fada99477fbd5de9d0f583402269595d77a2b40b`, version `1.4+2.gfada994` | GPL-3.0-or-later | LBM collision operators and boundary conditions |
+| `pystencilssfg` | pinned public Git commit `c635a7666bb97fe6c15490011fa03d48a93e2879`, version `0.1a4+59.gc635a76` | GPL-3.0-or-later | Source-file generation backend used by `sweepgen` |
+| `numpy` | pinned: `2.4.2` | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | Numerical dependency used by the pycodegen stack |
+| `sympy` | pinned: `1.14.0` | BSD | Symbolic algebra for code generation |
+| `Jinja2` | pinned: `3.1.6` | BSD-3-Clause | Template rendering used by codegen tooling |
+| `py-cpuinfo` | pinned: `9.0.0` | MIT | Host capability helper required by `sweepgen` |
+
+The canonical app-owned installer path is:
+
+- `pystencils` from pinned public Git commit `a13c5b1c71c924b0d58c1a343ac9780015786edd`
+- `lbmpy` from pinned public Git commit `fada99477fbd5de9d0f583402269595d77a2b40b`
+- `pystencilssfg` from pinned public Git commit `c635a7666bb97fe6c15490011fa03d48a93e2879`
+- pinned `numpy`, `sympy`, `Jinja2`, and `py-cpuinfo` from PyPI
+- editable in-repo `sweepgen`
 
 The open-source dependencies listed above are GPL-3.0-compatible.
 Optional CUDA Toolkit use is governed separately by NVIDIA's EULA and redistribution terms.

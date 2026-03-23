@@ -5,6 +5,23 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+PYSTENCILS_VERSION="2.0.dev0+170.ga13c5b1"
+PYSTENCILS_COMMIT="a13c5b1c71c924b0d58c1a343ac9780015786edd"
+PYSTENCILS_URL="git+https://i10git.cs.fau.de/pycodegen/pystencils.git@${PYSTENCILS_COMMIT}#egg=pystencils"
+
+LBMPY_VERSION="1.4+2.gfada994"
+LBMPY_COMMIT="fada99477fbd5de9d0f583402269595d77a2b40b"
+LBMPY_URL="git+https://i10git.cs.fau.de/pycodegen/lbmpy.git@${LBMPY_COMMIT}#egg=lbmpy"
+
+PYSTENCILSSFG_VERSION="0.1a4+59.gc635a76"
+PYSTENCILSSFG_COMMIT="c635a7666bb97fe6c15490011fa03d48a93e2879"
+PYSTENCILSSFG_URL="git+https://i10git.cs.fau.de/pycodegen/pystencils-sfg.git@${PYSTENCILSSFG_COMMIT}#egg=pystencilssfg"
+
+NUMPY_VERSION="2.4.2"
+SYMPY_VERSION="1.14.0"
+JINJA2_VERSION="3.1.6"
+PY_CPUINFO_VERSION="9.0.0"
+
 walberla_root_arg=""
 project_root_arg=""
 venv_arg=""
@@ -76,15 +93,10 @@ PROJECT_ROOT="${project_root_arg:-$(cd "$WALBERLA_ROOT/.." && pwd)}"
 VENV="${venv_arg:-$PROJECT_ROOT/venv-walberla-codegen}"
 PYTHON_BIN="${python_arg:-python3}"
 
-SWEEPGEN_REQUIREMENTS="$WALBERLA_ROOT/sweepgen/cmake/sweepgen-requirements.txt"
 SWEEPGEN_DIR="$WALBERLA_ROOT/sweepgen"
 
 if [[ ! -d "$WALBERLA_ROOT" || ! -f "$WALBERLA_ROOT/CMakeLists.txt" ]]; then
   echo "ERROR: Invalid walberla root: $WALBERLA_ROOT" >&2
-  exit 1
-fi
-if [[ ! -f "$SWEEPGEN_REQUIREMENTS" ]]; then
-  echo "ERROR: Missing sweepgen requirements: $SWEEPGEN_REQUIREMENTS" >&2
   exit 1
 fi
 if [[ ! -d "$SWEEPGEN_DIR" || ! -f "$SWEEPGEN_DIR/pyproject.toml" ]]; then
@@ -123,14 +135,18 @@ source "$VENV/bin/activate"
 echo "Upgrading packaging tools..."
 python -m pip install --upgrade pip setuptools wheel
 
-echo "Installing sweepgen codegen requirements..."
-python -m pip install -r "$SWEEPGEN_REQUIREMENTS"
+echo "Installing pinned pycodegen stack..."
+python -m pip install \
+  "$PYSTENCILS_URL" \
+  "$LBMPY_URL" \
+  "$PYSTENCILSSFG_URL" \
+  "numpy==${NUMPY_VERSION}" \
+  "sympy==${SYMPY_VERSION}" \
+  "Jinja2==${JINJA2_VERSION}" \
+  "py-cpuinfo==${PY_CPUINFO_VERSION}"
 
 echo "Installing sweepgen (editable)..."
 python -m pip install -e "$SWEEPGEN_DIR"
-
-echo "Installing additional direct imports used by app build checks..."
-python -m pip install numpy sympy jinja2
 
 echo "Validating codegen imports..."
 python - <<'PY'
@@ -140,4 +156,13 @@ PY
 
 echo
 echo "Codegen venv is ready at: $VENV"
+echo "Pinned codegen stack:"
+echo "  pystencils==${PYSTENCILS_VERSION} @ ${PYSTENCILS_COMMIT}"
+echo "  lbmpy==${LBMPY_VERSION} @ ${LBMPY_COMMIT}"
+echo "  pystencilssfg==${PYSTENCILSSFG_VERSION} @ ${PYSTENCILSSFG_COMMIT}"
+echo "  numpy==${NUMPY_VERSION}"
+echo "  sympy==${SYMPY_VERSION}"
+echo "  Jinja2==${JINJA2_VERSION}"
+echo "  py-cpuinfo==${PY_CPUINFO_VERSION}"
+echo "  sweepgen @ editable:$SWEEPGEN_DIR"
 echo "Activate with: source \"$VENV/bin/activate\""
