@@ -2261,6 +2261,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
         for (auto* block : openBlocks)
         {
             auto* bcId = block->getData<BcField>(bcIdID);
+            auto* regionId = block->getData<RegionIdField>(regionIdID);
             auto* flowRho = block->getData<ScalarField>(flowRhoID);
             auto* flowTheta = block->getData<ScalarField>(flowThetaID);
             auto* flowVelocity = block->getData<VecField>(flowVelocityID);
@@ -2277,6 +2278,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                 real_t uySum = real_t(0);
                 real_t uzSum = real_t(0);
                 uint_t count = uint_t(0);
+                walberla::uint16_t contributingRegionId = walberla::uint16_t(0);
 
                 for (uint_t qi = uint_t(0); qi < LbStencil::Q; ++qi)
                 {
@@ -2291,6 +2293,43 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                     const int nz = z + dz;
                     if ((*bcId)(nx, ny, nz, 0) != targetBc)
                         continue;
+                    const auto rid = (*regionId)(nx, ny, nz, 0);
+                    if (rid == walberla::uint16_t(0) || size_t(rid) > colorRegions.size())
+                    {
+                        const int gx = int(bb.xMin()) + x;
+                        const int gy = int(bb.yMin()) + y;
+                        const int gz = int(bb.zMin()) + z;
+                        const int gnx = int(bb.xMin()) + nx;
+                        const int gny = int(bb.yMin()) + ny;
+                        const int gnz = int(bb.zMin()) + nz;
+                        WALBERLA_ABORT(
+                            "Open-boundary target precompute failed: invalid regionId at open-boundary neighbor."
+                            << " fluidLocal=<" << x << "," << y << "," << z << ">"
+                            << " fluidGlobal=<" << gx << "," << gy << "," << gz << ">"
+                            << " neighborLocal=<" << nx << "," << ny << "," << nz << ">"
+                            << " neighborGlobal=<" << gnx << "," << gny << "," << gnz << ">"
+                            << " targetBc=" << targetBc
+                            << " rid=" << rid
+                            << " regionCount=" << colorRegions.size() << ".");
+                    }
+                    if (contributingRegionId == walberla::uint16_t(0))
+                    {
+                        contributingRegionId = rid;
+                    }
+                    else if (contributingRegionId != rid)
+                    {
+                        const int gx = int(bb.xMin()) + x;
+                        const int gy = int(bb.yMin()) + y;
+                        const int gz = int(bb.zMin()) + z;
+                        WALBERLA_ABORT(
+                            "Open-boundary target precompute failed: same-type boundary neighbors span multiple regions."
+                            << " fluidLocal=<" << x << "," << y << "," << z << ">"
+                            << " fluidGlobal=<" << gx << "," << gy << "," << gz << ">"
+                            << " targetBc=" << targetBc
+                            << " regionIdA=" << contributingRegionId
+                            << " regionIdB=" << rid
+                            << ". Split boundary regions so each open-boundary fluid cell sees exactly one region.");
+                    }
                     rhoSum += (*flowRho)(nx, ny, nz, 0);
                     thetaSum += (*flowTheta)(nx, ny, nz, 0);
                     uxSum += (*flowVelocity)(nx, ny, nz, 0);
@@ -2347,6 +2386,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                     real_t nySum = real_t(0);
                     real_t nzSum = real_t(0);
                     uint_t count = uint_t(0);
+                    walberla::uint16_t contributingRegionId = walberla::uint16_t(0);
                     bool hasFlowIn = false;
                     bool hasFlowOut = false;
 
@@ -2390,6 +2430,23 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                                 << " rid=" << rid
                                 << " neighborBc=" << int(neighborBc)
                                 << " regionIdVectorSize=" << pressureFlowModeByRegionId.size() << ".");
+                        }
+                        if (contributingRegionId == walberla::uint16_t(0))
+                        {
+                            contributingRegionId = rid;
+                        }
+                        else if (contributingRegionId != rid)
+                        {
+                            const int gx = int(bb.xMin()) + x;
+                            const int gy = int(bb.yMin()) + y;
+                            const int gz = int(bb.zMin()) + z;
+                            WALBERLA_ABORT(
+                                "Pressure-boundary target precompute failed: contributing PRESSURE neighbors span multiple regions."
+                                << " fluidLocal=<" << x << "," << y << "," << z << ">"
+                                << " fluidGlobal=<" << gx << "," << gy << "," << gz << ">"
+                                << " regionIdA=" << contributingRegionId
+                                << " regionIdB=" << rid
+                                << ". Split PRESSURE regions so each boundary fluid cell sees exactly one region.");
                         }
                         const auto flowMode = pressureFlowModeByRegionId[size_t(rid)];
                         if (flowMode == PRESSURE_FLOW_IN)
