@@ -272,14 +272,36 @@ static std::map<std::string, std::string> readCheckpointMetadata(const std::file
 
     std::map<std::string, std::string> data;
     std::string line;
+    size_t lineNumber = size_t(0);
     while (std::getline(in, line))
     {
+        ++lineNumber;
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
         if (line.empty())
+            continue;
+        if (line.front() == '#')
             continue;
         const auto pos = line.find('=');
         if (pos == std::string::npos)
-            continue;
-        data[line.substr(size_t(0), pos)] = line.substr(pos + size_t(1));
+        {
+            WALBERLA_ABORT("Malformed checkpoint metadata line " << lineNumber << " in "
+                           << file.string() << ": '" << line << "'");
+        }
+
+        const std::string key = line.substr(size_t(0), pos);
+        if (key.empty())
+        {
+            WALBERLA_ABORT("Malformed checkpoint metadata line " << lineNumber << " in "
+                           << file.string() << ": empty key");
+        }
+
+        const auto inserted = data.emplace(key, line.substr(pos + size_t(1)));
+        if (!inserted.second)
+        {
+            WALBERLA_ABORT("Duplicate checkpoint metadata key '" << key << "' in "
+                           << file.string());
+        }
     }
     return data;
 }
@@ -300,6 +322,19 @@ static std::string stripQuotes(std::string s)
             return s.substr(size_t(1), s.size() - size_t(2));
     }
     return s;
+}
+
+static void validateCheckpointMetadataStringFieldOrAbort(
+    const std::string& fieldName,
+    const std::string& value)
+{
+    if (value.find('|') != std::string::npos ||
+        value.find('\n') != std::string::npos ||
+        value.find('\r') != std::string::npos)
+    {
+        WALBERLA_ABORT(fieldName << " must not contain '|', '\\n', or '\\r' because it is written "
+                       << "verbatim into checkpoint metadata. Got '" << value << "'");
+    }
 }
 
 static std::uint64_t splitmix64(std::uint64_t x)

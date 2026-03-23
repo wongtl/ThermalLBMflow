@@ -357,6 +357,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             regionCfg.name = stripQuotes(rb.getParameter<std::string>("name", ""));
             if (regionCfg.name.empty())
                 WALBERLA_ABORT("MeshGeometry.Region.name must be set.");
+            validateCheckpointMetadataStringFieldOrAbort("MeshGeometry.Region.name", regionCfg.name);
             regionCfg.meshFile = stripQuotes(rb.getParameter<std::string>("meshFile", ""));
             if (regionCfg.meshFile.empty())
                 WALBERLA_ABORT("MeshGeometry.Region.meshFile must be set.");
