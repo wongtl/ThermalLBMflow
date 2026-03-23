@@ -38,7 +38,7 @@ fi
 # App paths.
 REAL_EXE="$APP_DIR/../../../build-gpu/apps/FluidSim_gpu/FluidSim_gpu"
 SHARED_DIR="$APP_DIR/../shared"
-PARAMS="$SHARED_DIR/params/FluidSim.prm"
+PARAMS="$SHARED_DIR/params/FluidSim_LZ.prm"
 
 # Module/loading knobs.
 TOOLCHAIN_MODULE="${TOOLCHAIN_MODULE:-foss/2024a}"

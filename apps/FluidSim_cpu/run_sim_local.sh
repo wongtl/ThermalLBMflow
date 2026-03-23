@@ -12,7 +12,7 @@ PROJECT_ROOT="$(cd "$APP_DIR/../../.." && pwd)"
 BUILD_DIR="$WALBERLA_ROOT/build-cpu"
 REAL_EXE="$BUILD_DIR/apps/FluidSim_cpu/FluidSim_cpu"
 SHARED_DIR="$APP_DIR/../shared"
-PARAMS="$SHARED_DIR/params/FluidSim.prm"
+PARAMS="$SHARED_DIR/params/FluidSim_LZ.prm"
 VENV="${VENV:-$PROJECT_ROOT/venv-walberla-codegen}"
 
 # Runtime knobs (launcher-owned, environment-overridable).

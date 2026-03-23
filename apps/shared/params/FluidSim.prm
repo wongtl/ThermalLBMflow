@@ -1,9 +1,17 @@
 // SPDX-FileCopyrightText: 2026 David Wong, University of Oxford
 // SPDX-License-Identifier: GPL-3.0-or-later
+//
+// Generic Rayleigh-Bénard convection example.
+// Uses the cube_rbc.PLY geometry: a unit cube with colored faces for
+// hot bottom (red), cold top (cyan), and adiabatic side walls (blue).
+//
+// Fluid: water at ~25 °C.
+// Expected Ra ~ 1e6 (well above onset of convection).
+
 MeshGeometry
 {
     // Load restart from apps/storage/<case_name>/checkpoint/fluidsim_state_*
-    // checkpointFolder "7248243";
+    // checkpointFolder "<case_name>";
 
     // Roles: 1 FLUID_CONTAINER, N SOLID_OBSTACLE
     // Region placement: each region is centered to the interior domain first,
@@ -11,20 +19,19 @@ MeshGeometry
     Region
     {
         name "container";
-        meshFile "geometry/LZModel_FullScale.PLY";
+        meshFile "geometry/cube_rbc.PLY";
         role "FLUID_CONTAINER";
-        // Mesh file is in mm; convert to meters.
-        scale 0.001;
+        scale 1.0;
         translate < 0, 0, 0 >;
     }
 
+    // Optional obstacle example:
     // Region
     // {
     //     name "obstacle";
-    //     meshFile "geometry/SuspendedPlateONLY_redinnertop_greeninnerrest.PLY";
+    //     meshFile "geometry/some_obstacle.PLY";
     //     role "SOLID_OBSTACLE";
-    //      // Mesh file is in mm; convert to meters.
-    //     scale 0.001;
+    //     scale 1.0;
     //     translate < 0, 0, 0 >;
     // }
 
@@ -34,21 +41,21 @@ MeshGeometry
 
 Physical
 {
-    // LXe near saturation at 176.41 K.
-    // nu_phys = mu / rho using mu = 4.1646e-4 Pa*s and rho = 2864.9 kg/m^3.
-    // alpha_phys kept consistent with k_phys, rho, and cp using cp = 343.14 J/(kg*K).
-    nu_phys    1.453663304129289e-7;   // m^2/s
-    alpha_phys 7.14380615441805e-8;    // m^2/s
-    k_phys     0.07022802837;          // W/(m*K)
-    beta       2.322e-3;       // 1/K
-    
+    // Water at ~25 °C.
+    nu_phys    8.9e-7;      // kinematic viscosity [m^2/s]
+    alpha_phys 1.43e-7;     // thermal diffusivity [m^2/s]
+    k_phys     0.607;       // thermal conductivity [W/(m*K)]
+    beta       2.1e-4;      // thermal expansion coefficient [1/K]
+
     // Physical domain size (meters).
-    domain_size   < 1.460, 1.700, 1.460 >; // 5 mm cells, sized to fit LZModel_FullScale interior
-    fluid_height  1.6985;                  // physical LXe height from the full-scale mesh (m)
-    deltaT_K      2.25;                    // interface (176.41 K) - inlet (174.16 K)
-    g             9.81;        // m/s^2 (solver uses positive magnitude for upward buoyancy of hot fluid)
-    // manual scale factor applied to Ra and buoyancy forcing
-    Ra_factor 1e-7;
+    domain_size   < 1, 1, 1 >;
+    fluid_height  1;                    // height of fluid column [m]
+    deltaT_K      10.0;                   // temperature difference hot - cold [K]
+    g             9.81;                   // gravitational acceleration [m/s^2]
+
+    // Manual scale factor applied to Ra and buoyancy forcing.
+    // Set to 1.0 for physical Ra; reduce to lower effective Ra for testing.
+    Ra_factor 1.0;
 }
 
 Resolution
@@ -57,9 +64,11 @@ Resolution
     // Total lattice cells are derived as: interiorFineCells + 2 * MeshGeometry.paddingCells.
     // Physical.full_size is derived from domain_size and total lattice cells.
     // Total lattice cells must match Physical.full_size aspect ratio and be divisible by cellsPerBlock.
-    interiorFineCells < 292, 340, 292 >;
+    interiorFineCells < 100, 100, 100 >;
+
     // Cells per block in x/y/z.
-    cellsPerBlock < 294, 342, 294 >;
+    cellsPerBlock < 102, 102, 102 >;
+
     // Number of blocks should be divisible by ntasks for proper performance.
 }
 
@@ -90,9 +99,9 @@ Parameters
 
 ColorBC
 {
-    pruneOpenEdge true;    // when true, prune non-face-adjacent INLET/OUTLET/PRESSURE support unless backed by >=2 face seeds
+    pruneOpenEdge false;   // when true, prune non-face-adjacent INLET/OUTLET/PRESSURE support unless backed by >=2 face seeds
 
-    // region name semantics:
+    // Region name semantics:
     //   DIRICHLET<N> / ADIABATIC<N> / HEATLOAD<N> / INLET<N> / OUTLET<N> / PRESSURE<N>
     //   where <N> is a positive integer suffix (not empty, not all zeros).
     //   Example: DIRICHLET1, DIRICHLET2, ADIABATIC1, HEATLOAD1, INLET1, OUTLET1, PRESSURE1
@@ -126,59 +135,33 @@ ColorBC
     //   thermal  "Dirichlet" or "Adiabatic"
     //   theta    <value>
 
+    // Hot bottom wall (red faces in cube_rbc.PLY).
     Region
     {
         enabled true;
         name "DIRICHLET1";
-        rgb < 0, 255, 255 >;
-        theta 0.0;
-        L_char 1.6985;
-        Nu false;
+        rgb < 255, 0, 0 >;
+        theta 1.0;
+        L_char 1.0;
+        Nu true;
     }
 
+    // Cold top wall (blue faces in cube_rbc.PLY).
+    Region
+    {
+        enabled true;
+        name "DIRICHLET2";
+        rgb < 0, 255, 0 >;
+        theta 0.0;
+        L_char 1.0;
+        Nu true;
+    }
+
+    // Adiabatic side walls (green faces in cube_rbc.PLY).
     Region
     {
         enabled true;
         name "ADIABATIC1";
-        rgb < 255, 0, 255 >;
-    }
-
-    Region
-    {
-        enabled true;
-        name "INLET1";
-        rgb < 255, 0, 0 >;
-        velocity < 0, 0.040971546304114405, 0 >;
-        rho 1.0;
-        thermal "Dirichlet";
-        theta -1.0;
-    }
-
-    // heatload_watts [W/m^2]
-    Region
-    {
-        enabled true;
-        name "HEATLOAD1";
         rgb < 0, 255, 0 >;
-        heatload_watts 1.2;
-    }
-
-    Region
-    {
-        enabled true;
-        name "HEATLOAD2";
-        rgb < 255, 255, 0 >;
-        heatload_watts 694.6;
-    }
-
-    Region
-    {
-        enabled true;
-        name "PRESSURE1";
-        rgb < 0, 0, 255 >;
-        flow "out";
-        rho 1.0;
-        thermal "Adiabatic";
-        theta 0.0;
     }
 }

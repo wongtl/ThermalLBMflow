@@ -106,3 +106,6 @@ cmake-workflows.json
 /apps/storage/
 /apps/FluidSim_cpu/output/logs/
 /apps/shared/geometry/geometry_compat/*.ply
+
+# Experiment-specific parameter files (keep out of public repo)
+/apps/shared/params/FluidSim_LZ.prm
