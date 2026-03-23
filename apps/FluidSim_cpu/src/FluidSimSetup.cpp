@@ -470,10 +470,11 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
         bool plyHasFaceRgb = false;
         if (isRoot)
         {
-            const PlyColorInfo plyColorInfo = scanPlyColorInfo(region.loadPath);
-            plySawHeaderEnd = plyColorInfo.sawHeaderEnd;
-            plyHasVertexRgb = plyColorInfo.hasVertexRgb();
-            plyHasFaceRgb = plyColorInfo.hasFaceRgb();
+            PlyHeaderDecl plyHeader;
+            const bool plyHeaderParsed = parsePlyHeaderDecl(region.loadPath, plyHeader);
+            plySawHeaderEnd = plyHeaderParsed && plyHeader.sawEndHeader;
+            plyHasVertexRgb = plyHeaderParsed && plyHeader.hasVertexRgb();
+            plyHasFaceRgb = plyHeaderParsed && plyHeader.hasFaceRgb();
         }
         std::array<int, 3> plyColorFlags{
             plySawHeaderEnd ? 1 : 0,
@@ -492,7 +493,8 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
         plyHasVertexRgb = (plyColorFlags[1] != 0);
         plyHasFaceRgb = (plyColorFlags[2] != 0);
         if (!plySawHeaderEnd || (!plyHasVertexRgb && !plyHasFaceRgb))
-            WALBERLA_ABORT("Mesh file must contain RGB properties on vertex or face elements in the PLY header: "
+            WALBERLA_ABORT("Mesh file must be a binary little-endian PLY triangle mesh with RGB properties on vertex "
+                           << "or face elements in the header: "
                            << region.loadPath.string());
 
         region.mesh = std::make_shared<walberla::mesh::TriangleMesh>();

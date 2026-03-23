@@ -737,107 +737,6 @@ static std::shared_ptr<ThermalBoundaryCache> buildThermalBoundaryCache(
 #ifndef FLUIDSIM_RUNTIME_ONLY
 namespace fluidsim
 {
-struct PlyColorInfo
-{
-    bool sawHeaderEnd = false;
-    bool vertexHasRed = false;
-    bool vertexHasGreen = false;
-    bool vertexHasBlue = false;
-    bool faceHasRed = false;
-    bool faceHasGreen = false;
-    bool faceHasBlue = false;
-
-    bool hasVertexRgb() const { return vertexHasRed && vertexHasGreen && vertexHasBlue; }
-    bool hasFaceRgb() const { return faceHasRed && faceHasGreen && faceHasBlue; }
-};
-
-static PlyColorInfo scanPlyColorInfo(const std::filesystem::path& path)
-{
-    enum class ElementSection
-    {
-        Other,
-        Vertex,
-        Face
-    };
-
-    PlyColorInfo info;
-    std::ifstream in(path, std::ios::binary);
-    if (!in)
-        return info;
-
-    ElementSection section = ElementSection::Other;
-    std::string line;
-    for (size_t i = 0; i < size_t(4096) && std::getline(in, line); ++i)
-    {
-        const std::string upper = toUpper(line);
-        if (upper.find("END_HEADER") != std::string::npos)
-        {
-            info.sawHeaderEnd = true;
-            break;
-        }
-
-        std::istringstream iss(upper);
-        std::string keyword;
-        if (!(iss >> keyword))
-            continue;
-
-        if (keyword == "ELEMENT")
-        {
-            std::string elementName;
-            iss >> elementName;
-            if (elementName == "VERTEX")
-                section = ElementSection::Vertex;
-            else if (elementName == "FACE")
-                section = ElementSection::Face;
-            else
-                section = ElementSection::Other;
-            continue;
-        }
-
-        if (keyword != "PROPERTY")
-            continue;
-
-        std::string token;
-        if (!(iss >> token))
-            continue;
-
-        std::string propertyName;
-        if (token == "LIST")
-        {
-            std::string countType;
-            std::string valueType;
-            if (!(iss >> countType >> valueType >> propertyName))
-                continue;
-        }
-        else
-        {
-            if (!(iss >> propertyName))
-                continue;
-        }
-
-        const bool isRed = propertyName == "RED";
-        const bool isGreen = propertyName == "GREEN";
-        const bool isBlue = propertyName == "BLUE";
-        if (!isRed && !isGreen && !isBlue)
-            continue;
-
-        if (section == ElementSection::Vertex)
-        {
-            if (isRed) info.vertexHasRed = true;
-            if (isGreen) info.vertexHasGreen = true;
-            if (isBlue) info.vertexHasBlue = true;
-        }
-        else if (section == ElementSection::Face)
-        {
-            if (isRed) info.faceHasRed = true;
-            if (isGreen) info.faceHasGreen = true;
-            if (isBlue) info.faceHasBlue = true;
-        }
-    }
-
-    return info;
-}
-
 struct PlyPropertyDecl
 {
     bool isList = false;
@@ -853,6 +752,12 @@ struct PlyHeaderDecl
     bool isPly = false;
     bool binaryLittleEndian = false;
     bool sawEndHeader = false;
+    bool vertexHasRed = false;
+    bool vertexHasGreen = false;
+    bool vertexHasBlue = false;
+    bool faceHasRed = false;
+    bool faceHasGreen = false;
+    bool faceHasBlue = false;
     std::uint64_t vertexCount = 0;
     std::uint64_t faceCount = 0;
     std::vector<PlyPropertyDecl> vertexProperties;
@@ -862,6 +767,9 @@ struct PlyHeaderDecl
     size_t facePropertyLineBegin = std::numeric_limits<size_t>::max();
     size_t facePropertyLineEnd = std::numeric_limits<size_t>::max();
     size_t vertexIndicesProperty = std::numeric_limits<size_t>::max();
+
+    bool hasVertexRgb() const { return vertexHasRed && vertexHasGreen && vertexHasBlue; }
+    bool hasFaceRgb() const { return faceHasRed && faceHasGreen && faceHasBlue; }
 };
 
 static void trimCarriageReturn(std::string& s)
@@ -1051,15 +959,22 @@ static bool parsePlyHeaderDecl(const std::filesystem::path& path, PlyHeaderDecl&
                 if (property.isList)
                     return false;
                 headerOut.vertexProperties.push_back(property);
+                const std::string propName = toLower(property.name);
+                if (propName == "red") headerOut.vertexHasRed = true;
+                if (propName == "green") headerOut.vertexHasGreen = true;
+                if (propName == "blue") headerOut.vertexHasBlue = true;
             }
             else if (section == HeaderSection::Face)
             {
                 if (headerOut.facePropertyLineBegin == std::numeric_limits<size_t>::max())
                     headerOut.facePropertyLineBegin = lineIndex;
                 headerOut.facePropertyLineEnd = lineIndex + size_t(1);
+                const std::string propName = toLower(property.name);
+                if (propName == "red") headerOut.faceHasRed = true;
+                if (propName == "green") headerOut.faceHasGreen = true;
+                if (propName == "blue") headerOut.faceHasBlue = true;
                 if (property.isList)
                 {
-                    const std::string propName = toLower(property.name);
                     if ((propName == "vertex_indices" || propName == "vertex_index") &&
                         headerOut.vertexIndicesProperty == std::numeric_limits<size_t>::max())
                     {
