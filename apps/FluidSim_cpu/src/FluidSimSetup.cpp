@@ -254,6 +254,8 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     if (!meshRegionBlocks.empty())
     {
         bool hasContainer = false;
+        std::unordered_set<std::string> meshRegionNames;
+        meshRegionNames.reserve(meshRegionBlocks.size());
         for (const auto& rb : meshRegionBlocks)
         {
             GeometryRegionConfig regionCfg;
@@ -261,6 +263,11 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             if (regionCfg.name.empty())
                 WALBERLA_ABORT("MeshGeometry.Region.name must be set.");
             validateCheckpointMetadataStringFieldOrAbort("MeshGeometry.Region.name", regionCfg.name);
+            if (!meshRegionNames.insert(regionCfg.name).second)
+            {
+                WALBERLA_ABORT("Duplicate MeshGeometry.Region.name '" << regionCfg.name
+                               << "'. Region names must be unique because checkpoint/restart uses them as region identities.");
+            }
             regionCfg.meshFile = stripQuotes(rb.getParameter<std::string>("meshFile", ""));
             if (regionCfg.meshFile.empty())
                 WALBERLA_ABORT("MeshGeometry.Region.meshFile must be set.");
