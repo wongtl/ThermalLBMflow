@@ -10,6 +10,7 @@ PROJECT_ROOT="$(cd "$APP_DIR/../../.." && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build-local"
 REAL_EXE="$BUILD_DIR/apps/FluidSim_cpu/FluidSim_cpu"
 VENV="${VENV:-$PROJECT_ROOT/venv-walberla-codegen}"
+INSTALL_CODEGEN_VENV_SCRIPT="$WALBERLA_ROOT/apps/shared/scripts/install_codegen_venv.sh"
 
 # Local build knobs.
 BUILD_JOBS="${BUILD_JOBS:-1}"
@@ -25,6 +26,10 @@ if [[ ! -f "$WALBERLA_ROOT/CMakeLists.txt" ]]; then
     echo "ERROR: Missing CMakeLists.txt in source dir: $WALBERLA_ROOT" >&2
     exit 1
 fi
+if [[ ! -f "$INSTALL_CODEGEN_VENV_SCRIPT" ]]; then
+    echo "ERROR: Missing codegen installer: $INSTALL_CODEGEN_VENV_SCRIPT" >&2
+    exit 1
+fi
 
 if ! command -v python3 >/dev/null 2>&1; then
     echo "ERROR: python3 not found in PATH." >&2
@@ -35,11 +40,16 @@ if ! command -v cmake >/dev/null 2>&1; then
     exit 1
 fi
 
-# Prefer the shared codegen venv Python when available.
-CODEGEN_PY="$(command -v python3)"
-if [[ -x "$VENV/bin/python" ]]; then
-    CODEGEN_PY="$VENV/bin/python"
+# Venv policy (local): require the canonical pinned codegen environment.
+# Bootstrap once with:
+#   apps/shared/scripts/install_codegen_venv.sh
+if [[ ! -x "$VENV/bin/python" || ! -f "$VENV/bin/activate" ]]; then
+    echo "ERROR: Required codegen venv not found at $VENV" >&2
+    echo "Run once: $INSTALL_CODEGEN_VENV_SCRIPT" >&2
+    exit 1
 fi
+
+CODEGEN_PY="$VENV/bin/python"
 
 if [[ "$RECONFIGURE" == "1" ]]; then
     rm -rf "$BUILD_DIR"
