@@ -8,10 +8,11 @@ set -euo pipefail
 # App paths.
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WALBERLA_ROOT="$(cd "$APP_DIR/../.." && pwd)"
-BUILD_DIR="$WALBERLA_ROOT/build-cpu"
+PROJECT_ROOT="$(cd "$APP_DIR/../../.." && pwd)"
+BUILD_DIR="$PROJECT_ROOT/build-local"
 REAL_EXE="$BUILD_DIR/apps/FluidSim_cpu/FluidSim_cpu"
 SHARED_DIR="$APP_DIR/../shared"
-PARAMS="$SHARED_DIR/params/FluidSim_LZ.prm"
+PARAMS="$SHARED_DIR/params/FluidSim.prm"
 
 # Runtime knobs (launcher-owned, environment-overridable).
 NP="${NP:-1}"

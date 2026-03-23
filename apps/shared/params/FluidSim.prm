@@ -21,7 +21,7 @@ MeshGeometry
         name "container";
         meshFile "geometry/cube_rbc.PLY";
         role "FLUID_CONTAINER";
-        scale 1.0;
+        scale 0.001;
         translate < 0, 0, 0 >;
     }
 
@@ -151,7 +151,7 @@ ColorBC
     {
         enabled true;
         name "DIRICHLET2";
-        rgb < 0, 255, 0 >;
+        rgb < 0, 0, 255 >;
         theta 0.0;
         L_char 1.0;
         Nu true;

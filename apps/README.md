@@ -72,8 +72,8 @@ pair. The launcher writes the log to
 `apps/FluidSim_cpu/output/`.
 
 The repository ships a public example parameter file in
-`shared/params/FluidSim.prm`. The local launcher currently uses the parameter
-file configured in `run_sim_local.sh`.
+`shared/params/FluidSim.prm`, and `run_sim_local.sh` now uses that public
+example by default.
 
 For cluster/manual workflows, use the dedicated build and launcher scripts:
 

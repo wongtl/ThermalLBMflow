@@ -16,7 +16,7 @@ CPU build of ThermalLBMflow.
 ```
 
 `build_local.sh` is the intended local build path. It configures
-`walberla/build-cpu`, builds `FluidSim_cpu`, and uses the shared codegen venv
+`build-local` next to the `walberla` checkout, builds `FluidSim_cpu`, and uses the shared codegen venv
 Python when available.
 
 Environment overrides:
@@ -24,7 +24,7 @@ Environment overrides:
 | Variable | Purpose | Default |
 |---|---|---|
 | `BUILD_JOBS` | Local build parallelism | `1` |
-| `RECONFIGURE` | Remove `build-cpu` before configuring | `0` |
+| `RECONFIGURE` | Remove `build-local` before configuring | `0` |
 | `VENV` | Codegen venv location to prefer | `<repo_root>/venv-walberla-codegen` |
 
 ## Build (Cluster / Manual)
@@ -60,9 +60,9 @@ For a normal local workflow you usually do not need this script. Use
 ```
 
 This is the intended local run entrypoint. It runs a single-rank,
-single-timestep mesh-only job using the parameter file currently configured in
-the script. It is useful for verifying the geometry setup before moving to
-longer runs or cluster jobs.
+single-timestep mesh-only job using `../shared/params/FluidSim.prm`. It is
+useful for verifying the geometry setup before moving to longer runs or cluster
+jobs.
 
 This launcher is run-only. Build first with `./build_local.sh`.
 

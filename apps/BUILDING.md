@@ -82,5 +82,4 @@ sbatch --nodes=1 --gres=gpu:2 --ntasks-per-gpu=1 --cpus-per-gpu=2 run_sim_gpu.sb
 - `run_sim_local.sh` is run-only. Build first with `build_local.sh`.
 - `build_cpu.sh`, `build_gpu.sh`, and the `sbatch` launchers are the
   cluster/manual workflow.
-- The parameter files used by the launchers remain whatever is currently wired
-  into those scripts.
+- `run_sim_local.sh` uses `apps/shared/params/FluidSim.prm`.
