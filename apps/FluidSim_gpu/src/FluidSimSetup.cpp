@@ -2007,9 +2007,9 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                         ++fluidLocal;
                         blockHasFluid = true;
                         const bool onBoundary =
-                            gx == int(domainBB.xMin()) || gx == int(domainBB.xMax()) ||
-                            gy == int(domainBB.yMin()) || gy == int(domainBB.yMax()) ||
-                            gz == int(domainBB.zMin()) || gz == int(domainBB.zMax());
+                            ((!periodicX) && (gx == int(domainBB.xMin()) || gx == int(domainBB.xMax()))) ||
+                            ((!periodicY) && (gy == int(domainBB.yMin()) || gy == int(domainBB.yMax()))) ||
+                            ((!periodicZ) && (gz == int(domainBB.zMin()) || gz == int(domainBB.zMax())));
                         if (onBoundary) ++fluidOnDomainBoundaryLocal;
                         continue;
                     }
@@ -2085,7 +2085,12 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                  << " bf=" << blocksWithFluidNoBoundaryGlobal;
         WALBERLA_LOG_INFO(geomLine.str());
         if (noneBoundarySolidGlobal > 0) WALBERLA_LOG_WARNING("Boundary solid cells with bcId==NONE: " << noneBoundarySolidGlobal);
-        if (fluidOnDomainBoundaryGlobal > 0) WALBERLA_LOG_WARNING("Fluid cells on domain boundary: " << fluidOnDomainBoundaryGlobal);
+    }
+    if (fluidOnDomainBoundaryGlobal > 0)
+    {
+        WALBERLA_ABORT("Fluid cells touch a non-periodic domain boundary: " << fluidOnDomainBoundaryGlobal
+                       << ". This would be converted to no-slip bounce-back later."
+                       << " Adjust mesh placement, domain padding, periodic flags, or use explicit open boundaries.");
     }
 
     // vtkMeshOnly early exit: cellType and bcId are fully classified; skip all remaining
