@@ -1213,6 +1213,22 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     std::unordered_map<std::uint32_t, std::string> uidByRgb;
     uidByRgb.reserve(regionBlocks.size());
     size_t disabledColorRegionCount = size_t(0);
+    auto requireFiniteColorScalar = [](const std::string& regionName, const char* fieldName, real_t value) {
+        if (!std::isfinite(double(value)))
+        {
+            WALBERLA_ABORT("ColorBC.Region '" << regionName << "' requires finite " << fieldName << ".");
+        }
+    };
+    auto requireFiniteColorVec3 = [&](const std::string& regionName,
+                                      const char* fieldName,
+                                      const walberla::Vector3<real_t>& value) {
+        if (!std::isfinite(double(value[0])) ||
+            !std::isfinite(double(value[1])) ||
+            !std::isfinite(double(value[2])))
+        {
+            WALBERLA_ABORT("ColorBC.Region '" << regionName << "' requires finite " << fieldName << " components.");
+        }
+    };
     for (const auto& rb : regionBlocks)
     {
         const bool regionEnabled = rb.getParameter<bool>("enabled", false);
@@ -1238,7 +1254,9 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
         if (region.bcId == BC_INLET || region.bcId == BC_OUTLET)
         {
             region.flowVelocity = rb.getParameter<walberla::Vector3<real_t>>("velocity");
+            requireFiniteColorVec3(region.uidName, "velocity", region.flowVelocity);
             region.flowRho = rb.getParameter<real_t>("rho");
+            requireFiniteColorScalar(region.uidName, "rho", region.flowRho);
             if (region.flowRho <= real_t(0))
                 WALBERLA_ABORT("ColorBC.Region '" << region.uidName << "' requires rho > 0 for inlet/outlet.");
             const auto inletOutletThermal = thermalTypeFromString(rb.getParameter<std::string>("thermal"));
@@ -1249,12 +1267,14 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             }
             region.thermalType = inletOutletThermal;
             region.flowTheta = rb.getParameter<real_t>("theta");
+            requireFiniteColorScalar(region.uidName, "theta", region.flowTheta);
             region.theta = region.flowTheta;
         }
         else if (region.bcId == BC_PRESSURE)
         {
             region.flowVelocity = walberla::Vector3<real_t>(real_t(0));
             region.flowRho = rb.getParameter<real_t>("rho");
+            requireFiniteColorScalar(region.uidName, "rho", region.flowRho);
             if (region.flowRho <= real_t(0))
                 WALBERLA_ABORT("ColorBC.Region '" << region.uidName << "' requires rho > 0 for pressure boundaries.");
             if (!rb.isDefined("flow"))
@@ -1268,6 +1288,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             }
             region.thermalType = pressureThermal;
             region.flowTheta = rb.getParameter<real_t>("theta");
+            requireFiniteColorScalar(region.uidName, "theta", region.flowTheta);
             region.theta = region.flowTheta;
         }
         else
@@ -1276,8 +1297,10 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             {
                 region.thermalType = THERMAL_DIRICHLET;
                 region.theta = rb.getParameter<real_t>("theta");
+                requireFiniteColorScalar(region.uidName, "theta", region.theta);
                 region.nuOutput = rb.getParameter<bool>("Nu", false);
                 region.nuLCharPhys = rb.getParameter<real_t>("L_char");
+                requireFiniteColorScalar(region.uidName, "L_char", region.nuLCharPhys);
                 if (region.nuLCharPhys <= real_t(0))
                 {
                     WALBERLA_ABORT("ColorBC.Region '" << region.uidName
@@ -1287,6 +1310,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                 {
                     region.hasNuDeltaThetaOverride = true;
                     region.nuDeltaThetaOverride = rb.getParameter<real_t>("Nu_dTheta");
+                    requireFiniteColorScalar(region.uidName, "Nu_dTheta", region.nuDeltaThetaOverride);
                     if (region.nuDeltaThetaOverride <= real_t(0))
                     {
                         WALBERLA_ABORT("ColorBC.Region '" << region.uidName
