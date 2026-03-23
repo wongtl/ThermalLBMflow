@@ -8,11 +8,13 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <cctype>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <chrono>
+#include <cmath>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -23,6 +25,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
@@ -180,23 +183,98 @@ static std::string toUpper(std::string s)
     return s;
 }
 
+enum class StrictUnsignedParseStatus
+{
+    Ok,
+    Invalid,
+    Overflow
+};
+
+[[maybe_unused]] static StrictUnsignedParseStatus tryParseStrictUnsignedLongLong(
+    const std::string& rawValue,
+    unsigned long long& valueOut)
+{
+    if (rawValue.empty())
+        return StrictUnsignedParseStatus::Invalid;
+    if (rawValue.front() == '+' || rawValue.front() == '-')
+        return StrictUnsignedParseStatus::Invalid;
+    if (!std::all_of(rawValue.begin(), rawValue.end(), [](unsigned char c) { return std::isdigit(c) != 0; }))
+        return StrictUnsignedParseStatus::Invalid;
+
+    unsigned long long parsed = 0ULL;
+    const auto* begin = rawValue.data();
+    const auto* end = begin + rawValue.size();
+    const auto result = std::from_chars(begin, end, parsed);
+    if (result.ec == std::errc::result_out_of_range)
+        return StrictUnsignedParseStatus::Overflow;
+    if (result.ec != std::errc() || result.ptr != end)
+        return StrictUnsignedParseStatus::Invalid;
+
+    valueOut = parsed;
+    return StrictUnsignedParseStatus::Ok;
+}
+
+[[maybe_unused]] static uint_t parseStrictUintOrAbort(const std::string& context, const std::string& rawValue)
+{
+    unsigned long long parsed = 0ULL;
+    const auto status = tryParseStrictUnsignedLongLong(rawValue, parsed);
+    if (status == StrictUnsignedParseStatus::Overflow)
+        WALBERLA_ABORT(context << " is too large for an unsigned integer: '" << rawValue << "'");
+    if (status != StrictUnsignedParseStatus::Ok)
+        WALBERLA_ABORT(context << " expects an unsigned integer, got '" << rawValue << "'");
+    if (parsed > static_cast<unsigned long long>(std::numeric_limits<uint_t>::max()))
+        WALBERLA_ABORT(context << " is too large for uint_t: '" << rawValue << "'");
+    return static_cast<uint_t>(parsed);
+}
+
+[[maybe_unused]] static void validatePrmArgOrAbort(int argc, char** argv)
+{
+    if (argc <= 1 || argv[1] == nullptr)
+        WALBERLA_ABORT("Expected parameter file path as argv[1] before runtime flags.");
+
+    const std::string prmArg(argv[1]);
+    if (prmArg.empty() || prmArg.rfind("--", 0) == 0)
+    {
+        WALBERLA_ABORT("Expected parameter file path as argv[1] before runtime flags, got '"
+                       << prmArg << "'");
+    }
+}
+
 // Setup-only parsing and metadata helpers.
 #ifndef FLUIDSIM_RUNTIME_ONLY
 template <typename T>
 static walberla::Vector3<T> parseVec3Csv(const std::string& text)
 {
-    std::istringstream iss(text);
-    T x{};
-    T y{};
-    T z{};
-    char c1 = '\0';
-    char c2 = '\0';
-    if (!(iss >> x >> c1 >> y >> c2 >> z) || c1 != ',' || c2 != ',')
-        WALBERLA_ABORT("Invalid Vec3 CSV format in checkpoint metadata: '" << text << "'");
-    iss >> std::ws;
-    if (!iss.eof())
-        WALBERLA_ABORT("Invalid Vec3 CSV format in checkpoint metadata: '" << text << "'");
-    return walberla::Vector3<T>(x, y, z);
+    if constexpr (std::is_same_v<T, uint_t>)
+    {
+        const size_t comma1 = text.find(',');
+        const size_t comma2 = (comma1 == std::string::npos) ? std::string::npos : text.find(',', comma1 + size_t(1));
+        if (comma1 == std::string::npos || comma2 == std::string::npos || text.find(',', comma2 + size_t(1)) != std::string::npos)
+            WALBERLA_ABORT("Invalid Vec3 CSV format in checkpoint metadata: '" << text << "'");
+
+        const std::string xText = text.substr(size_t(0), comma1);
+        const std::string yText = text.substr(comma1 + size_t(1), comma2 - comma1 - size_t(1));
+        const std::string zText = text.substr(comma2 + size_t(1));
+        return walberla::Vector3<T>(
+            parseStrictUintOrAbort("Invalid Vec3 CSV format in checkpoint metadata", xText),
+            parseStrictUintOrAbort("Invalid Vec3 CSV format in checkpoint metadata", yText),
+            parseStrictUintOrAbort("Invalid Vec3 CSV format in checkpoint metadata", zText));
+    }
+    else
+    {
+        std::istringstream iss(text);
+        T x{};
+        T y{};
+        T z{};
+        char c1 = '\0';
+        char c2 = '\0';
+        if (!(iss >> x >> c1 >> y >> c2 >> z) || c1 != ',' || c2 != ',')
+            WALBERLA_ABORT("Invalid Vec3 CSV format in checkpoint metadata: '" << text << "'");
+        iss >> std::ws;
+        if (!iss.eof())
+            WALBERLA_ABORT("Invalid Vec3 CSV format in checkpoint metadata: '" << text << "'");
+        return walberla::Vector3<T>(x, y, z);
+    }
 }
 
 static std::map<std::string, std::string> readCheckpointMetadata(const std::filesystem::path& file)
@@ -345,30 +423,8 @@ static double deterministicCenteredNoise(int gx, int gy, int gz)
 static CmdOptions parseArgs(int argc, char** argv)
 {
     // Parse runtime flags supplied by launcher scripts (run_sim_*.sbatch / run_sim_local.sh).
+    validatePrmArgOrAbort(argc, argv);
     CmdOptions cmd;
-    const auto parseU64OrAbort = [](const std::string& flag, const char* rawValue) -> unsigned long long {
-        try
-        {
-            const std::string value(rawValue);
-            size_t consumed = size_t(0);
-            const unsigned long long parsed = std::stoull(value, &consumed);
-            if (consumed != value.size())
-                WALBERLA_ABORT(flag << " expects an unsigned integer, got '" << value << "'");
-            return parsed;
-        }
-        catch (const std::exception& ex)
-        {
-            WALBERLA_ABORT(flag << " expects an unsigned integer, got '" << rawValue
-                               << "' (" << ex.what() << ")");
-            return 0ULL;
-        }
-    };
-    const auto parseUintOrAbort = [&](const std::string& flag, const char* rawValue) -> uint_t {
-        const auto parsed = parseU64OrAbort(flag, rawValue);
-        if (parsed > static_cast<unsigned long long>(std::numeric_limits<uint_t>::max()))
-            WALBERLA_ABORT(flag << " is too large for uint_t: '" << rawValue << "'");
-        return static_cast<uint_t>(parsed);
-    };
     const auto parseDoubleOrAbort = [](const std::string& flag, const char* rawValue) -> double {
         try
         {
@@ -377,6 +433,8 @@ static CmdOptions parseArgs(int argc, char** argv)
             const double parsed = std::stod(value, &consumed);
             if (consumed != value.size())
                 WALBERLA_ABORT(flag << " expects a numeric value, got '" << value << "'");
+            if (!std::isfinite(parsed))
+                WALBERLA_ABORT(flag << " expects a finite numeric value, got '" << value << "'");
             return parsed;
         }
         catch (const std::exception& ex)
@@ -405,22 +463,20 @@ static CmdOptions parseArgs(int argc, char** argv)
         if (a == "--timesteps")
         {
             if (i + 1 >= argc) WALBERLA_ABORT("--timesteps requires a positive integer");
-            const auto parsed = parseU64OrAbort("--timesteps", argv[++i]);
-            if (parsed == 0ULL)
+            const auto parsed = parseStrictUintOrAbort("--timesteps", std::string(argv[++i]));
+            if (parsed == uint_t(0))
                 WALBERLA_ABORT("--timesteps must be > 0");
-            if (parsed > static_cast<unsigned long long>(std::numeric_limits<uint_t>::max()))
-                WALBERLA_ABORT("--timesteps is too large for uint_t");
-            cmd.timesteps = static_cast<uint_t>(parsed);
+            cmd.timesteps = parsed;
         }
         else if (a == "--minimalLogs")
         {
             if (i + 1 >= argc) WALBERLA_ABORT("--minimalLogs requires an integer cadence");
-            cmd.minimalLogsEvery = parseUintOrAbort("--minimalLogs", argv[++i]);
+            cmd.minimalLogsEvery = parseStrictUintOrAbort("--minimalLogs", std::string(argv[++i]));
         }
         else if (a == "--thermalLogs")
         {
             if (i + 1 >= argc) WALBERLA_ABORT("--thermalLogs requires an integer cadence");
-            cmd.thermalLogsEvery = parseUintOrAbort("--thermalLogs", argv[++i]);
+            cmd.thermalLogsEvery = parseStrictUintOrAbort("--thermalLogs", std::string(argv[++i]));
         }
         else if (a == "--initPerturb")
         {
@@ -432,12 +488,12 @@ static CmdOptions parseArgs(int argc, char** argv)
         else if (a == "--checkpointEvery")
         {
             if (i + 1 >= argc) WALBERLA_ABORT("--checkpointEvery requires an integer cadence");
-            cmd.checkpointEvery = parseUintOrAbort("--checkpointEvery", argv[++i]);
+            cmd.checkpointEvery = parseStrictUintOrAbort("--checkpointEvery", std::string(argv[++i]));
         }
         else if (a == "--vtkevery")
         {
             if (i + 1 >= argc) WALBERLA_ABORT("--vtkevery requires an integer cadence");
-            cmd.vtkEvery = parseUintOrAbort("--vtkevery", argv[++i]);
+            cmd.vtkEvery = parseStrictUintOrAbort("--vtkevery", std::string(argv[++i]));
         }
         else if (a == "--vtkinit")
         {
@@ -1289,8 +1345,7 @@ static GeometryRole geometryRoleFromString(const std::string& roleString)
 // This is a path contract helper (not a generic "current working tree" resolver).
 static std::filesystem::path resolveAppRootPath(int argc, char** argv)
 {
-    if (argc <= 1)
-        WALBERLA_ABORT("Expected parameter file path as argv[1].");
+    validatePrmArgOrAbort(argc, argv);
 
     const std::filesystem::path prmPath = std::filesystem::absolute(std::filesystem::path(argv[1]));
     if (!prmPath.has_parent_path())
