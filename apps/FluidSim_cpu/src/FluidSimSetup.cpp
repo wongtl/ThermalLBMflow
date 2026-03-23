@@ -2117,7 +2117,8 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     pressureBlocks.reserve(localBlockCountReserve);
     pressureInBlocks.reserve(localBlockCountReserve);
     pressureOutBlocks.reserve(localBlockCountReserve);
-    const bool storeBoundaryFluidIndices = (vtkWriteFrequency > uint_t(0));
+    const bool vtkCanRun = cmd.vtkInit || (vtkWriteFrequency > uint_t(0));
+    const bool storeBoundaryFluidIndices = vtkCanRun;
     const bool hasInletBoundarySolids = (inletBoundarySolidGlobal > std::uint64_t(0));
     const bool hasOutletBoundarySolids = (outletBoundarySolidGlobal > std::uint64_t(0));
     const bool hasPressureBoundarySolids = (pressureBoundarySolidGlobal > std::uint64_t(0));
@@ -3126,7 +3127,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
         }
     }
     std::vector<NuVtkFieldInfo> nuVtkFields;
-    if (vtkWriteFrequency > uint_t(0))
+    if (vtkCanRun)
     {
         nuVtkFields.reserve(nuOutputRegions.size());
         for (const auto& region : nuOutputRegions)
