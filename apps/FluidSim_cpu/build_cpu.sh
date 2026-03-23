@@ -9,6 +9,7 @@ PROJECT_ROOT="$(cd "$APP_DIR/../../.." && pwd)"
 SRC_DIR="$PROJECT_ROOT/walberla"
 VENV="$PROJECT_ROOT/venv-walberla-codegen"
 BUILD_DIR="$PROJECT_ROOT/build-cpu"
+INSTALL_CODEGEN_VENV_SCRIPT="$SRC_DIR/apps/shared/scripts/install_codegen_venv.sh"
 
 # Build options.
 TARGET="${TARGET:-FluidSim_cpu}"
@@ -29,13 +30,12 @@ BUILD_TIME="${BUILD_TIME:-01:00:00}"
 BUILD_MEM="${BUILD_MEM:-16G}"
 
 # Required paths/files.
-SWEEPGEN_REQUIREMENTS="$SRC_DIR/sweepgen/cmake/sweepgen-requirements.txt"
 CORE_PATCH_SCRIPT="$SRC_DIR/apps/shared/scripts/apply_core_patches.sh"
 
 [[ -d "$SRC_DIR" ]] || { echo "ERROR: Source directory not found: $SRC_DIR"; exit 1; }
 [[ -f "$SRC_DIR/CMakeLists.txt" ]] || { echo "ERROR: Missing CMakeLists.txt in source dir: $SRC_DIR"; exit 1; }
 [[ -f "$APP_DIR/build_cpu.sh" ]] || { echo "ERROR: Missing build script: $APP_DIR/build_cpu.sh"; exit 1; }
-[[ -f "$SWEEPGEN_REQUIREMENTS" ]] || { echo "ERROR: Missing sweepgen requirements: $SWEEPGEN_REQUIREMENTS"; exit 1; }
+[[ -f "$INSTALL_CODEGEN_VENV_SCRIPT" ]] || { echo "ERROR: Missing codegen installer: $INSTALL_CODEGEN_VENV_SCRIPT"; exit 1; }
 [[ -f "$CORE_PATCH_SCRIPT" ]] || { echo "ERROR: Missing core patch script: $CORE_PATCH_SCRIPT"; exit 1; }
 
 # Always launch through srun when BUILD_USE_SRUN=1. Guard with FLUIDSIM_BUILD_INNER to avoid recursion.
@@ -94,30 +94,25 @@ echo "Using python: $PYTHON_BIN"
 echo "Using cmake: $(command -v cmake)"
 cmake --version | head -n 1
 
-# Venv policy (CPU): create/manage automatically for first-time convenience.
-# For a pre-provisioned workflow (matching GPU policy), run once:
+# Venv policy (CPU): require the canonical pinned codegen environment.
+# Bootstrap once with:
 #   apps/shared/scripts/install_codegen_venv.sh
 if [[ ! -x "$VENV/bin/python" || ! -f "$VENV/bin/activate" ]]; then
-    mkdir -p "$(dirname "$VENV")"
-    "$PYTHON_BIN" -m venv "$VENV"
-fi
-if [[ ! -x "$VENV/bin/python" || ! -f "$VENV/bin/activate" ]]; then
-    echo "ERROR: Failed to create venv at $VENV" >&2
+    echo "ERROR: Required codegen venv not found at $VENV" >&2
+    echo "Run once: $INSTALL_CODEGEN_VENV_SCRIPT" >&2
     exit 1
 fi
 
 # shellcheck disable=SC1090
 source "$VENV/bin/activate"
 
-python -m pip install --upgrade pip setuptools wheel >/dev/null
-
 if ! python - <<'PY'
 import numpy, sympy, jinja2, lbmpy, pystencils, pystencilssfg, sweepgen
 PY
 then
-    echo "Installing missing codegen dependencies in $VENV ..."
-    python -m pip install -r "$SWEEPGEN_REQUIREMENTS"
-    python -m pip install -e "$SRC_DIR/sweepgen"
+    echo "ERROR: Missing codegen dependencies in $VENV." >&2
+    echo "Run once: $INSTALL_CODEGEN_VENV_SCRIPT" >&2
+    exit 1
 fi
 
 # MPI compiler checks.

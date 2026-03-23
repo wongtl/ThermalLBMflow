@@ -9,6 +9,7 @@ PROJECT_ROOT="$(cd "$APP_DIR/../../.." && pwd)"
 SRC_DIR="$PROJECT_ROOT/walberla"
 VENV="$PROJECT_ROOT/venv-walberla-codegen"
 BUILD_DIR="$PROJECT_ROOT/build-gpu"
+INSTALL_CODEGEN_VENV_SCRIPT="$SRC_DIR/apps/shared/scripts/install_codegen_venv.sh"
 
 # Build options.
 TARGET="${TARGET:-FluidSim_gpu}"
@@ -40,6 +41,7 @@ CORE_PATCH_SCRIPT="$SRC_DIR/apps/shared/scripts/apply_core_patches.sh"
 [[ -d "$SRC_DIR" ]] || { echo "ERROR: Source directory not found: $SRC_DIR"; exit 1; }
 [[ -f "$SRC_DIR/CMakeLists.txt" ]] || { echo "ERROR: Missing CMakeLists.txt in source dir: $SRC_DIR"; exit 1; }
 [[ -f "$APP_DIR/build_gpu.sh" ]] || { echo "ERROR: Missing build script: $APP_DIR/build_gpu.sh"; exit 1; }
+[[ -f "$INSTALL_CODEGEN_VENV_SCRIPT" ]] || { echo "ERROR: Missing codegen installer: $INSTALL_CODEGEN_VENV_SCRIPT"; exit 1; }
 [[ -f "$CORE_PATCH_SCRIPT" ]] || { echo "ERROR: Missing core patch script: $CORE_PATCH_SCRIPT"; exit 1; }
 
 # Always launch through srun when BUILD_USE_SRUN=1. Guard with FLUIDSIM_BUILD_INNER to avoid recursion.
@@ -114,7 +116,7 @@ echo "CUDA_ARCHITECTURES: $CUDA_ARCHITECTURES"
 #   apps/shared/scripts/install_codegen_venv.sh
 if [[ ! -x "$VENV/bin/python" || ! -f "$VENV/bin/activate" ]]; then
     echo "ERROR: Required codegen venv not found at $VENV" >&2
-    echo "Create it once outside this build job and install sweepgen deps." >&2
+    echo "Run once: $INSTALL_CODEGEN_VENV_SCRIPT" >&2
     exit 1
 fi
 
@@ -126,7 +128,7 @@ import numpy, sympy, jinja2, lbmpy, pystencils, pystencilssfg, sweepgen
 PY
 then
     echo "ERROR: Missing codegen dependencies in $VENV." >&2
-    echo "Install required packages in that venv and retry." >&2
+    echo "Run once: $INSTALL_CODEGEN_VENV_SCRIPT" >&2
     exit 1
 fi
 
