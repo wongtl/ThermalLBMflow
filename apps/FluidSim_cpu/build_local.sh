@@ -49,7 +49,19 @@ if [[ ! -x "$VENV/bin/python" || ! -f "$VENV/bin/activate" ]]; then
     exit 1
 fi
 
+# shellcheck disable=SC1090
+source "$VENV/bin/activate"
+
 CODEGEN_PY="$VENV/bin/python"
+
+if ! python - <<'PY'
+import numpy, sympy, jinja2, lbmpy, pystencils, pystencilssfg, sweepgen
+PY
+then
+    echo "ERROR: Missing codegen dependencies in $VENV." >&2
+    echo "Run once: $INSTALL_CODEGEN_VENV_SCRIPT" >&2
+    exit 1
+fi
 
 if [[ "$RECONFIGURE" == "1" ]]; then
     rm -rf "$BUILD_DIR"
