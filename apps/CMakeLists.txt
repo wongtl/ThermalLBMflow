@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2017-2026 waLBerla contributors
+# SPDX-FileCopyrightText: 2026 David Wong, University of Oxford
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Benchmarks
 if ( WALBERLA_BUILD_BENCHMARKS )
     add_subdirectory ( benchmarks )

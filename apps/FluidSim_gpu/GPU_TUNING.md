@@ -1,3 +1,5 @@
+<!-- SPDX-FileCopyrightText: 2026 David Wong, University of Oxford -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 # FluidSim_gpu Production Runtime and Profiling Defaults
 
 ## Production runtime profile (fixed in code)

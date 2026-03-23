@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 David Wong, University of Oxford
+// SPDX-License-Identifier: GPL-3.0-or-later
 #include "timeloop/all.h"
 #include "stencil/all.h"
 #include "field/FileIO.h"

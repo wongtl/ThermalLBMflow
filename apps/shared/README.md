@@ -1,3 +1,5 @@
+<!-- SPDX-FileCopyrightText: 2026 David Wong, University of Oxford -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 # FluidSim Shared Notes
 
 This directory contains assets shared by `FluidSim_cpu` and `FluidSim_gpu`:

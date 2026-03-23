@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 David Wong, University of Oxford
+// SPDX-License-Identifier: GPL-3.0-or-later
 #include "src/GpuReductions.hpp"
 
 #if defined(FLUIDSIM_GPU_BUILD) && defined(WALBERLA_BUILD_WITH_CUDA)

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 David Wong, University of Oxford
+// SPDX-License-Identifier: GPL-3.0-or-later
 MeshGeometry
 {
     // Load restart from apps/storage/<case_name>/checkpoint/fluidsim_state_*

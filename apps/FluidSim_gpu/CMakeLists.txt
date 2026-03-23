@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 David Wong, University of Oxford
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Build prerequisites.
 if( NOT WALBERLA_BUILD_WITH_CUDA )
     message(STATUS "FluidSim_gpu requires WALBERLA_BUILD_WITH_CUDA=ON - skipping")

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 David Wong, University of Oxford
+// SPDX-License-Identifier: GPL-3.0-or-later
 #include "core/all.h"
 #include "blockforest/all.h"
 #include "field/all.h"

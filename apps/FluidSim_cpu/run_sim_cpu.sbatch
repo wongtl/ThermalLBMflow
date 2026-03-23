@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 David Wong, University of Oxford
+# SPDX-License-Identifier: GPL-3.0-or-later
 #SBATCH --job-name=fs_cpu
 ## CPU/GPU example (set at submit time):
 ## sbatch --clusters=arc --partition=interactive run_sim_cpu.sbatch
