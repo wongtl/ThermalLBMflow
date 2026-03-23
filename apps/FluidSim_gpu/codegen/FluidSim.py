@@ -108,8 +108,8 @@ with SourceFileGenerator(keep_unknown_argv=True) as sfg:
     )
 
     # Boundary kernels.
-    # Keep NoSlip single-threaded. OpenMP in this tiny irregular boundary kernel
-    # adds per-call team overhead and makes parallel mode behavior less deterministic.
+    # Generate NoSlip only from the serial config; GPU codegen keeps a single
+    # irregular boundary variant rather than separate backend-specific flavors.
     old_openmp_enabled = build_cfg.openmp_enabled
     build_cfg.openmp_enabled = False
     try:

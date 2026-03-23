@@ -61,16 +61,6 @@ with SourceFileGenerator(keep_unknown_argv=True) as sfg:
     ]
 
     # Distribution-function helpers.
-    def d3q19_weight(cx, cy, cz):
-        abs_sum = abs(cx) + abs(cy) + abs(cz)
-        if abs_sum == 0:
-            return sp.Rational(1, 3)
-        if abs_sum == 1:
-            return sp.Rational(1, 18)
-        if abs_sum == 2:
-            return sp.Rational(1, 36)
-        raise ValueError("Invalid D3Q19 direction.")
-
     def pdf_eq(cx, cy, cz, rho_val, ux_val, uy_val, uz_val):
         drho = rho_val - sp.Integer(1)
         u2 = ux_val * ux_val + uy_val * uy_val + uz_val * uz_val
