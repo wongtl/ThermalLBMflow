@@ -2005,8 +2005,9 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     }
 
     // Thermal initialization and optional deterministic perturbation.
+    const bool thetaPerturbRequested = (cmd.initPerturb > 0.0);
     auto applyThetaPerturb = [&]() {
-        if (cmd.initPerturb <= 0.0)
+        if (!thetaPerturbRequested)
             return;
         const real_t perturbAmp = real_t(cmd.initPerturb);
         for (auto& block : *blocks)
@@ -2040,6 +2041,10 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     else
     {
         applyThetaPerturb();
+    }
+    scalarComm();
+    if (restartEnabled)
+    {
         for (auto& block : *blocks)
         {
             auto* theta = block.getData<ScalarField>(thetaID);
@@ -2047,7 +2052,6 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             thetaTmp->set(*theta);
         }
     }
-    scalarComm();
     const real_t initialThetaRefForForce = real_t(thetaRef0);
     if (!restartEnabled)
     {
@@ -2057,6 +2061,15 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             auto initPdfs = mphys::hotplate::gen::LBM::InitPdfs{
                 pdfID, densityID, thetaID, velocityID, real_t(aLatFine), double(initialThetaRefForForce)};
             initMacro(&block);
+            initPdfs(&block);
+        }
+    }
+    else if (thetaPerturbRequested)
+    {
+        for (auto& block : *blocks)
+        {
+            auto initPdfs = mphys::hotplate::gen::LBM::InitPdfs{
+                pdfID, densityID, thetaID, velocityID, real_t(aLatFine), double(initialThetaRefForForce)};
             initPdfs(&block);
         }
     }

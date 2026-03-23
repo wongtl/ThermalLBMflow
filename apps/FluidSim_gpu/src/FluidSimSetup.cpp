@@ -2188,8 +2188,9 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     }
 
     // Thermal initialization and optional deterministic perturbation.
+    const bool thetaPerturbRequested = (cmd.initPerturb > 0.0);
     auto applyThetaPerturb = [&]() {
-        if (cmd.initPerturb <= 0.0)
+        if (!thetaPerturbRequested)
             return;
         const real_t perturbAmp = real_t(cmd.initPerturb);
         for (auto& block : *blocks)
@@ -2223,6 +2224,10 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     else
     {
         applyThetaPerturb();
+    }
+    scalarComm();
+    if (restartEnabled)
+    {
         for (auto& block : *blocks)
         {
             auto* theta = block.getData<ScalarField>(thetaID);
@@ -2230,7 +2235,6 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             thetaTmp->set(*theta);
         }
     }
-    scalarComm();
     syncHostToRuntimeThetaBuffers();
 
     const real_t initialThetaRefForForce = real_t(thetaRef0);
@@ -2244,6 +2248,16 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             initMacro(&block);
             initPdfs(&block);
         }
+    }
+    else if (thetaPerturbRequested)
+    {
+        for (auto& block : *blocks)
+        {
+            auto initPdfs = mphys::hotplate::gen::LBM::InitPdfs{
+                pdfSimID, densitySimID, thetaSimID, velocitySimID, real_t(aLatFine), double(initialThetaRefForForce)};
+            initPdfs(&block);
+        }
+        syncRuntimeToHostPdfThetaRhoVel();
     }
 
     // GPU-only CUDA-aware MPI capability checks and runtime GPU comm setup.
