@@ -2066,10 +2066,10 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     const real_t initialThetaRefForForce = real_t(thetaRef0);
     if (!restartEnabled)
     {
-        auto initMacro = mphys::hotplate::gen::InitializeMacroFields{densityID, velocityID};
+        auto initMacro = fluidsim::gen::InitializeMacroFields{densityID, velocityID};
         for (auto& block : *blocks)
         {
-            auto initPdfs = mphys::hotplate::gen::LBM::InitPdfs{
+            auto initPdfs = fluidsim::gen::LBM::InitPdfs{
                 pdfID, densityID, thetaID, velocityID, real_t(aLatFine), double(initialThetaRefForForce)};
             initMacro(&block);
             initPdfs(&block);
@@ -2079,7 +2079,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     {
         for (auto& block : *blocks)
         {
-            auto initPdfs = mphys::hotplate::gen::LBM::InitPdfs{
+            auto initPdfs = fluidsim::gen::LBM::InitPdfs{
                 pdfID, densityID, thetaID, velocityID, real_t(aLatFine), double(initialThetaRefForForce)};
             initPdfs(&block);
         }
@@ -2661,14 +2661,14 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     // Keep one sweep instance per thread: generated sweep objects carry mutable
     // state/scratch (for example theta_ref), so sharing a single instance across
     // outer OpenMP threads would risk data races.
-    std::vector<std::shared_ptr<mphys::hotplate::gen::LBM::StreamCollideDenseSerial>> streamCollideDenseSweepsSerial;
-    std::vector<std::shared_ptr<mphys::hotplate::gen::LBM::StreamCollideSerial>> streamCollideSparseSweepsSerial;
-    std::vector<mphys::hotplate::gen::ThetaUpdateDenseSerial> thetaDenseSweepsSerial;
-    std::vector<mphys::hotplate::gen::ThetaUpdateSerial> thetaSparseSweepsSerial;
-    std::vector<std::shared_ptr<mphys::hotplate::gen::LBM::StreamCollideDenseOmp>> streamCollideDenseSweepsOmp;
-    std::vector<std::shared_ptr<mphys::hotplate::gen::LBM::StreamCollideOmp>> streamCollideSparseSweepsOmp;
-    std::vector<mphys::hotplate::gen::ThetaUpdateDenseOmp> thetaDenseSweepsOmp;
-    std::vector<mphys::hotplate::gen::ThetaUpdateOmp> thetaSparseSweepsOmp;
+    std::vector<std::shared_ptr<fluidsim::gen::LBM::StreamCollideDenseSerial>> streamCollideDenseSweepsSerial;
+    std::vector<std::shared_ptr<fluidsim::gen::LBM::StreamCollideSerial>> streamCollideSparseSweepsSerial;
+    std::vector<fluidsim::gen::ThetaUpdateDenseSerial> thetaDenseSweepsSerial;
+    std::vector<fluidsim::gen::ThetaUpdateSerial> thetaSparseSweepsSerial;
+    std::vector<std::shared_ptr<fluidsim::gen::LBM::StreamCollideDenseOmp>> streamCollideDenseSweepsOmp;
+    std::vector<std::shared_ptr<fluidsim::gen::LBM::StreamCollideOmp>> streamCollideSparseSweepsOmp;
+    std::vector<fluidsim::gen::ThetaUpdateDenseOmp> thetaDenseSweepsOmp;
+    std::vector<fluidsim::gen::ThetaUpdateOmp> thetaSparseSweepsOmp;
     if (useOmpKernels)
     {
         streamCollideDenseSweepsOmp.reserve(size_t(sweepThreadCount));
@@ -2692,18 +2692,18 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     {
         if (useOmpKernels)
         {
-            streamCollideDenseSweepsOmp.push_back(std::make_shared<mphys::hotplate::gen::LBM::StreamCollideDenseOmp>(
+            streamCollideDenseSweepsOmp.push_back(std::make_shared<fluidsim::gen::LBM::StreamCollideDenseOmp>(
                 pdfID, densityID, thetaID, velocityID, aLatLevel, nuLevel, double(initialThetaRefForForce)));
-            streamCollideSparseSweepsOmp.push_back(std::make_shared<mphys::hotplate::gen::LBM::StreamCollideOmp>(
+            streamCollideSparseSweepsOmp.push_back(std::make_shared<fluidsim::gen::LBM::StreamCollideOmp>(
                 pdfID, fluidCellIndexList, densityID, thetaID, velocityID, aLatLevel, nuLevel, double(initialThetaRefForForce)));
             thetaDenseSweepsOmp.emplace_back(thetaID, thetaTmpID, velocityID, alphaLevel);
             thetaSparseSweepsOmp.emplace_back(fluidCellIndexList, thetaID, thetaTmpID, velocityID, alphaLevel);
         }
         else
         {
-            streamCollideDenseSweepsSerial.push_back(std::make_shared<mphys::hotplate::gen::LBM::StreamCollideDenseSerial>(
+            streamCollideDenseSweepsSerial.push_back(std::make_shared<fluidsim::gen::LBM::StreamCollideDenseSerial>(
                 pdfID, densityID, thetaID, velocityID, aLatLevel, nuLevel, double(initialThetaRefForForce)));
-            streamCollideSparseSweepsSerial.push_back(std::make_shared<mphys::hotplate::gen::LBM::StreamCollideSerial>(
+            streamCollideSparseSweepsSerial.push_back(std::make_shared<fluidsim::gen::LBM::StreamCollideSerial>(
                 pdfID, fluidCellIndexList, densityID, thetaID, velocityID, aLatLevel, nuLevel, double(initialThetaRefForForce)));
             thetaDenseSweepsSerial.emplace_back(thetaID, thetaTmpID, velocityID, alphaLevel);
             thetaSparseSweepsSerial.emplace_back(fluidCellIndexList, thetaID, thetaTmpID, velocityID, alphaLevel);
@@ -2736,8 +2736,8 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                wallBc != BC_OUTLET &&
                wallBc != BC_PRESSURE;
     };
-    auto noSlipWalls = mphys::hotplate::gen::NoSlipFactory{blocks, pdfID}.fromLinks(wallLinks);
-    auto noSlipMesh = mphys::hotplate::gen::NoSlipFactory{blocks, pdfID}.fromLinks(meshLinks);
+    auto noSlipWalls = fluidsim::gen::NoSlipFactory{blocks, pdfID}.fromLinks(wallLinks);
+    auto noSlipMesh = fluidsim::gen::NoSlipFactory{blocks, pdfID}.fromLinks(meshLinks);
 
     std::vector<ThermalBCBlockEntry> thermalBCBlocks;
     for (const auto& kv : *thermalBoundaryCache)
@@ -2827,16 +2827,16 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
         }
     };
 
-    std::shared_ptr<mphys::hotplate::gen::OpenBoundaryReconstructInletSerial> openBoundaryInletSweepSerial;
-    std::shared_ptr<mphys::hotplate::gen::OpenBoundaryReconstructOutletSerial> openBoundaryOutletSweepSerial;
-    std::shared_ptr<mphys::hotplate::gen::OpenBoundaryReconstructPressureInSerial> openBoundaryPressureInSweepSerial;
-    std::shared_ptr<mphys::hotplate::gen::OpenBoundaryReconstructPressureOutSerial> openBoundaryPressureOutSweepSerial;
-    std::shared_ptr<mphys::hotplate::gen::ClampOpenBoundaryThetaTmpInletSerial> clampInletSweepSerial;
-    std::shared_ptr<mphys::hotplate::gen::ClampOpenBoundaryThetaTmpOutletSerial> clampOutletSweepSerial;
-    std::shared_ptr<mphys::hotplate::gen::ClampOpenBoundaryThetaTmpPressureSerial> clampPressureSweepSerial;
+    std::shared_ptr<fluidsim::gen::OpenBoundaryReconstructInletSerial> openBoundaryInletSweepSerial;
+    std::shared_ptr<fluidsim::gen::OpenBoundaryReconstructOutletSerial> openBoundaryOutletSweepSerial;
+    std::shared_ptr<fluidsim::gen::OpenBoundaryReconstructPressureInSerial> openBoundaryPressureInSweepSerial;
+    std::shared_ptr<fluidsim::gen::OpenBoundaryReconstructPressureOutSerial> openBoundaryPressureOutSweepSerial;
+    std::shared_ptr<fluidsim::gen::ClampOpenBoundaryThetaTmpInletSerial> clampInletSweepSerial;
+    std::shared_ptr<fluidsim::gen::ClampOpenBoundaryThetaTmpOutletSerial> clampOutletSweepSerial;
+    std::shared_ptr<fluidsim::gen::ClampOpenBoundaryThetaTmpPressureSerial> clampPressureSweepSerial;
     if (useOpenBoundary)
     {
-        openBoundaryInletSweepSerial = std::make_shared<mphys::hotplate::gen::OpenBoundaryReconstructInletSerial>(
+        openBoundaryInletSweepSerial = std::make_shared<fluidsim::gen::OpenBoundaryReconstructInletSerial>(
             bcIdID,
             flowRhoID,
             flowVelocityID,
@@ -2845,7 +2845,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             thetaID,
             double(aLatLevel),
             double(initialThetaRefForForce));
-        openBoundaryOutletSweepSerial = std::make_shared<mphys::hotplate::gen::OpenBoundaryReconstructOutletSerial>(
+        openBoundaryOutletSweepSerial = std::make_shared<fluidsim::gen::OpenBoundaryReconstructOutletSerial>(
             bcIdID,
             flowRhoID,
             flowVelocityID,
@@ -2854,7 +2854,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             thetaID,
             double(aLatLevel),
             double(initialThetaRefForForce));
-        openBoundaryPressureInSweepSerial = std::make_shared<mphys::hotplate::gen::OpenBoundaryReconstructPressureInSerial>(
+        openBoundaryPressureInSweepSerial = std::make_shared<fluidsim::gen::OpenBoundaryReconstructPressureInSerial>(
             bcIdID,
             flowRhoID,
             flowVelocityID,
@@ -2864,7 +2864,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             velocityID,
             double(aLatLevel),
             double(initialThetaRefForForce));
-        openBoundaryPressureOutSweepSerial = std::make_shared<mphys::hotplate::gen::OpenBoundaryReconstructPressureOutSerial>(
+        openBoundaryPressureOutSweepSerial = std::make_shared<fluidsim::gen::OpenBoundaryReconstructPressureOutSerial>(
             bcIdID,
             flowRhoID,
             flowVelocityID,
@@ -2874,11 +2874,11 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             velocityID,
             double(aLatLevel),
             double(initialThetaRefForForce));
-        clampInletSweepSerial = std::make_shared<mphys::hotplate::gen::ClampOpenBoundaryThetaTmpInletSerial>(
+        clampInletSweepSerial = std::make_shared<fluidsim::gen::ClampOpenBoundaryThetaTmpInletSerial>(
             bcIdID, flowThetaID, inletBoundaryFluidIndexList, thermalTypeID, thetaTmpID);
-        clampOutletSweepSerial = std::make_shared<mphys::hotplate::gen::ClampOpenBoundaryThetaTmpOutletSerial>(
+        clampOutletSweepSerial = std::make_shared<fluidsim::gen::ClampOpenBoundaryThetaTmpOutletSerial>(
             bcIdID, flowThetaID, outletBoundaryFluidIndexList, thermalTypeID, thetaTmpID);
-        clampPressureSweepSerial = std::make_shared<mphys::hotplate::gen::ClampOpenBoundaryThetaTmpPressureSerial>(
+        clampPressureSweepSerial = std::make_shared<fluidsim::gen::ClampOpenBoundaryThetaTmpPressureSerial>(
             bcIdID, flowThetaID, pressureBoundaryFluidIndexList, thermalTypeID, thetaTmpID);
     }
     auto applyOpenBoundary = [&]() {

@@ -15,7 +15,7 @@ namespace fluidsim
 
 // Generated sparse index-list type used by runtime sweep/boundary containers.
 using SparseCellIndexList = std::remove_cvref_t<
-    decltype(std::declval<mphys::hotplate::gen::LBM::StreamCollideSerial>().indexList())>;
+    decltype(std::declval<fluidsim::gen::LBM::StreamCollideSerial>().indexList())>;
 
 struct CheckpointRegionInfo
 {

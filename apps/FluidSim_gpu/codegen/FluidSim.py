@@ -36,7 +36,7 @@ def generate_stream_collide_sweep(sfg, lbm_bulk, cfg, name, *, sparse):
 # -----------------------------------------------------------------------------
 
 with SourceFileGenerator(keep_unknown_argv=True) as sfg:
-    sfg.namespace("mphys::hotplate::gen")
+    sfg.namespace("fluidsim::gen")
 
     # Build target and code-generation configs.
     build_cfg = get_build_config(sfg)

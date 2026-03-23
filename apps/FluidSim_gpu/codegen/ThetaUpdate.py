@@ -24,7 +24,7 @@ def generate_sweep(sfg, name, assignments, cfg, *, sparse=False):
 # -----------------------------------------------------------------------------
 
 with SourceFileGenerator(keep_unknown_argv=True) as sfg:
-    sfg.namespace("mphys::hotplate::gen")
+    sfg.namespace("fluidsim::gen")
 
     # Build and backend configuration.
     build_cfg = get_build_config(sfg)
