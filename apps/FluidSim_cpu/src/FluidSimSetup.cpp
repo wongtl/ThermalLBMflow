@@ -1041,7 +1041,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     using ThermalTypeField = walberla::field::GhostLayerField<walberla::uint8_t, 1>;
     using BcField = walberla::field::GhostLayerField<walberla::uint16_t, 1>;
     using RegionIdField = walberla::field::GhostLayerField<walberla::uint16_t, 1>;
-    using OpenBoundarySeedField = walberla::field::GhostLayerField<walberla::uint8_t, 1>;
+    using OpenBoundarySeedField = walberla::field::GhostLayerField<walberla::uint16_t, 1>;
     using CommStencil = walberla::stencil::D3Q19;
     using ThetaTmpCommStencil = walberla::stencil::D3Q7;
     using ScalarCommScheme = walberla::blockforest::communication::UniformBufferedScheme<CommStencil>;
@@ -1113,9 +1113,9 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
         flowVelocityID = walberla::field::addToStorage<VecField>(blocks, "flowVelocity", real_t(0.0), walberla::field::fzyx, uint_t(1));
         if (pruneOpenEdge)
         {
-            inletFaceSeedID = walberla::field::addToStorage<OpenBoundarySeedField>(blocks, "inletFaceSeed", walberla::uint8_t(0), walberla::field::fzyx, uint_t(1));
-            outletFaceSeedID = walberla::field::addToStorage<OpenBoundarySeedField>(blocks, "outletFaceSeed", walberla::uint8_t(0), walberla::field::fzyx, uint_t(1));
-            pressureFaceSeedID = walberla::field::addToStorage<OpenBoundarySeedField>(blocks, "pressureFaceSeed", walberla::uint8_t(0), walberla::field::fzyx, uint_t(1));
+            inletFaceSeedID = walberla::field::addToStorage<OpenBoundarySeedField>(blocks, "inletFaceSeed", walberla::uint16_t(0), walberla::field::fzyx, uint_t(1));
+            outletFaceSeedID = walberla::field::addToStorage<OpenBoundarySeedField>(blocks, "outletFaceSeed", walberla::uint16_t(0), walberla::field::fzyx, uint_t(1));
+            pressureFaceSeedID = walberla::field::addToStorage<OpenBoundarySeedField>(blocks, "pressureFaceSeed", walberla::uint16_t(0), walberla::field::fzyx, uint_t(1));
         }
     }
 
@@ -1133,9 +1133,9 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             block.getData<VecField>(flowVelocityID)->setWithGhostLayer(real_t(0.0));
             if (pruneOpenEdge)
             {
-                block.getData<OpenBoundarySeedField>(inletFaceSeedID)->setWithGhostLayer(walberla::uint8_t(0));
-                block.getData<OpenBoundarySeedField>(outletFaceSeedID)->setWithGhostLayer(walberla::uint8_t(0));
-                block.getData<OpenBoundarySeedField>(pressureFaceSeedID)->setWithGhostLayer(walberla::uint8_t(0));
+                block.getData<OpenBoundarySeedField>(inletFaceSeedID)->setWithGhostLayer(walberla::uint16_t(0));
+                block.getData<OpenBoundarySeedField>(outletFaceSeedID)->setWithGhostLayer(walberla::uint16_t(0));
+                block.getData<OpenBoundarySeedField>(pressureFaceSeedID)->setWithGhostLayer(walberla::uint16_t(0));
             }
         }
     }
@@ -1694,12 +1694,13 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
         {
             auto* cellType = block.getData<CellTypeField>(cellTypeID);
             auto* bcId = block.getData<BcField>(bcIdID);
+            auto* regionId = block.getData<RegionIdField>(regionIdID);
             auto* inletFaceSeed = block.getData<OpenBoundarySeedField>(inletFaceSeedID);
             auto* outletFaceSeed = block.getData<OpenBoundarySeedField>(outletFaceSeedID);
             auto* pressureFaceSeed = block.getData<OpenBoundarySeedField>(pressureFaceSeedID);
-            inletFaceSeed->setWithGhostLayer(walberla::uint8_t(0));
-            outletFaceSeed->setWithGhostLayer(walberla::uint8_t(0));
-            pressureFaceSeed->setWithGhostLayer(walberla::uint8_t(0));
+            inletFaceSeed->setWithGhostLayer(walberla::uint16_t(0));
+            outletFaceSeed->setWithGhostLayer(walberla::uint16_t(0));
+            pressureFaceSeed->setWithGhostLayer(walberla::uint16_t(0));
             const auto bb = blocks->getBlockCellBB(block);
             const auto ci = cellType->xyzSize();
             for (auto cell = ci.begin(); cell != ci.end(); ++cell)
@@ -1721,12 +1722,17 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                 if (!hasFaceFluidNeighbor)
                     continue;
 
+                const auto rid = (*regionId)(x, y, z, 0);
+                if (rid == walberla::uint16_t(0))
+                {
+                    WALBERLA_ABORT("Open-edge prune seed construction failed: open-boundary face seed has regionId=0.");
+                }
                 if (bc == BC_INLET)
-                    (*inletFaceSeed)(x, y, z, 0) = walberla::uint8_t(1);
+                    (*inletFaceSeed)(x, y, z, 0) = rid;
                 else if (bc == BC_OUTLET)
-                    (*outletFaceSeed)(x, y, z, 0) = walberla::uint8_t(1);
+                    (*outletFaceSeed)(x, y, z, 0) = rid;
                 else
-                    (*pressureFaceSeed)(x, y, z, 0) = walberla::uint8_t(1);
+                    (*pressureFaceSeed)(x, y, z, 0) = rid;
             }
         }
         (*inletFaceSeedComm)();
@@ -1781,7 +1787,12 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                     continue;
                 }
 
-                if ((*supportSeed)(x, y, z, 0) != walberla::uint8_t(0))
+                const auto candidateRegionId = (*regionId)(x, y, z, 0);
+                if (candidateRegionId == walberla::uint16_t(0))
+                {
+                    WALBERLA_ABORT("Open-edge prune failed: open-boundary candidate has regionId=0.");
+                }
+                if ((*supportSeed)(x, y, z, 0) == candidateRegionId)
                     continue;
 
                 uint_t supportCount = uint_t(0);
@@ -1793,11 +1804,11 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                     const int dx = walberla::stencil::cx[dir];
                     const int dy = walberla::stencil::cy[dir];
                     const int dz = walberla::stencil::cz[dir];
-                    if ((*supportSeed)(x + dx, y + dy, z + dz, 0) != walberla::uint8_t(0))
+                    if ((*supportSeed)(x + dx, y + dy, z + dz, 0) == candidateRegionId)
                         ++supportCount;
                 }
-                // Keep diagonal-only open-boundary support only when it is backed by a locally extended patch,
-                // not by a single face-seed cell that is likely just a voxel edge artifact.
+                // Keep diagonal-only open-boundary support only when it is backed by a locally extended patch
+                // from the same open-boundary region, not by a neighboring region of the same BC type.
                 if (supportCount >= uint_t(2))
                     continue;
 
