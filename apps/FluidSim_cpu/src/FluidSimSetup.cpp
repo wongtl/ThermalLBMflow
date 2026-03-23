@@ -173,8 +173,9 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     const walberla::Vector3<uint_t> paddingFineCells = meshParams.getParameter<walberla::Vector3<uint_t>>(
         "paddingCells", walberla::Vector3<uint_t>(uint_t(2), uint_t(2), uint_t(2)));
 
-    if (domainSizePhys[0] <= 0.0 || domainSizePhys[1] <= 0.0 || domainSizePhys[2] <= 0.0)
-        WALBERLA_ABORT("Physical.domain_size entries must be > 0.");
+    if (!std::isfinite(domainSizePhys[0]) || !std::isfinite(domainSizePhys[1]) || !std::isfinite(domainSizePhys[2]) ||
+        domainSizePhys[0] <= 0.0 || domainSizePhys[1] <= 0.0 || domainSizePhys[2] <= 0.0)
+        WALBERLA_ABORT("Physical.domain_size entries must be finite and > 0.");
     if (interiorFineCells[0] == uint_t(0) || interiorFineCells[1] == uint_t(0) || interiorFineCells[2] == uint_t(0))
         WALBERLA_ABORT("Resolution.interiorFineCells entries must be > 0.");
     if (cellsPerBlock[0] == uint_t(0) || cellsPerBlock[1] == uint_t(0) || cellsPerBlock[2] == uint_t(0))
@@ -191,10 +192,12 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
         WALBERLA_ABORT("Physical.deltaT_K must be finite.");
     if (!std::isfinite(g))
         WALBERLA_ABORT("Physical.g must be finite.");
-    if (nuLatTargetFine <= 0.0)
-        WALBERLA_ABORT("Numerics.nu_lat_target must be > 0.");
-    if (fluidHeightInput <= 0.0) WALBERLA_ABORT("Physical.fluid_height must be > 0.");
-    if (raFactor < 0.0) WALBERLA_ABORT("Physical.Ra_factor must be >= 0.");
+    if (!std::isfinite(nuLatTargetFine) || nuLatTargetFine <= 0.0)
+        WALBERLA_ABORT("Numerics.nu_lat_target must be finite and > 0.");
+    if (!std::isfinite(fluidHeightInput) || fluidHeightInput <= 0.0)
+        WALBERLA_ABORT("Physical.fluid_height must be finite and > 0.");
+    if (!std::isfinite(raFactor) || raFactor < 0.0)
+        WALBERLA_ABORT("Physical.Ra_factor must be finite and >= 0.");
 
     const auto fineDomainCells = walberla::Vector3<uint_t>(
         interiorFineCells[0] + uint_t(2) * paddingFineCells[0],
@@ -249,6 +252,14 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
     meshCfg.scale = meshParams.getParameter<real_t>("scale", real_t(1));
     meshCfg.translateFraction = meshParams.getParameter<walberla::Vector3<real_t>>(
         "translate", walberla::Vector3<real_t>(real_t(0)));
+    if (!std::isfinite(double(meshCfg.scale)) || meshCfg.scale <= real_t(0))
+        WALBERLA_ABORT("MeshGeometry.scale must be finite and > 0.");
+    if (!std::isfinite(double(meshCfg.translateFraction[0])) ||
+        !std::isfinite(double(meshCfg.translateFraction[1])) ||
+        !std::isfinite(double(meshCfg.translateFraction[2])))
+    {
+        WALBERLA_ABORT("MeshGeometry.translate entries must be finite.");
+    }
     walberla::Config::Blocks meshRegionBlocks;
     meshParams.getBlocks("Region", meshRegionBlocks, 0);
     if (!meshRegionBlocks.empty())
@@ -274,6 +285,18 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
             regionCfg.role = geometryRoleFromString(rb.getParameter<std::string>("role", "FLUID_CONTAINER"));
             regionCfg.scale = rb.getParameter<real_t>("scale", meshCfg.scale);
             regionCfg.translateFraction = rb.getParameter<walberla::Vector3<real_t>>("translate", meshCfg.translateFraction);
+            if (!std::isfinite(double(regionCfg.scale)) || regionCfg.scale <= real_t(0))
+            {
+                WALBERLA_ABORT("MeshGeometry.Region '" << regionCfg.name
+                               << "' requires scale to be finite and > 0.");
+            }
+            if (!std::isfinite(double(regionCfg.translateFraction[0])) ||
+                !std::isfinite(double(regionCfg.translateFraction[1])) ||
+                !std::isfinite(double(regionCfg.translateFraction[2])))
+            {
+                WALBERLA_ABORT("MeshGeometry.Region '" << regionCfg.name
+                               << "' requires finite translate entries.");
+            }
             if (regionCfg.role == GeometryRole::FluidContainer)
                 hasContainer = true;
             geometryRegionConfigs.push_back(regionCfg);
