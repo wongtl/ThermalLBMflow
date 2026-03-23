@@ -6,9 +6,26 @@ CPU build of ThermalLBMflow.
 
 ## Recommended Workflows
 
-- Local users: run `run_sim_local.sh`.
-  It is the intended local entrypoint and handles the local rebuild itself.
+- Local users: use `build_local.sh` followed by `run_sim_local.sh`.
 - Cluster/manual users: use `build_cpu.sh` and `run_sim_cpu.sbatch`.
+
+## Build (Local)
+
+```bash
+./build_local.sh
+```
+
+`build_local.sh` is the intended local build path. It configures
+`walberla/build-cpu`, builds `FluidSim_cpu`, and uses the shared codegen venv
+Python when available.
+
+Environment overrides:
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `BUILD_JOBS` | Local build parallelism | `1` |
+| `RECONFIGURE` | Remove `build-cpu` before configuring | `0` |
+| `VENV` | Codegen venv location to prefer | `<repo_root>/venv-walberla-codegen` |
 
 ## Build (Cluster / Manual)
 
@@ -34,7 +51,7 @@ CPU build of ThermalLBMflow.
 | `RECONFIGURE` | Force CMake reconfigure | `0` |
 
 For a normal local workflow you usually do not need this script. Use
-`run_sim_local.sh` instead.
+`build_local.sh` instead.
 
 ## Run (Local)
 
@@ -42,12 +59,14 @@ For a normal local workflow you usually do not need this script. Use
 ./run_sim_local.sh
 ```
 
-This is the intended local entrypoint. It performs a local rebuild of
-`FluidSim_cpu` if needed, then runs a single-rank, single-timestep mesh-only
-job using the parameter file currently configured in the script. It is useful
-for verifying the geometry setup before moving to longer runs or cluster jobs.
+This is the intended local run entrypoint. It runs a single-rank,
+single-timestep mesh-only job using the parameter file currently configured in
+the script. It is useful for verifying the geometry setup before moving to
+longer runs or cluster jobs.
 
-Environment overrides: `NP`, `OMP_NUM_THREADS`, `BUILD_JOBS`.
+This launcher is run-only. Build first with `./build_local.sh`.
+
+Environment overrides: `NP`, `OMP_NUM_THREADS`, `OMP_PROC_BIND`, `OMP_PLACES`.
 
 ## Run (Slurm)
 

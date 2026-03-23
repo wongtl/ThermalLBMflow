@@ -10,6 +10,8 @@ lattice Boltzmann method with TRT collision and Boussinesq buoyancy forcing.
 It targets Rayleigh-Bénard and mixed-convection problems in complex 3-D
 geometries defined by colored PLY surface meshes.
 
+See [BUILDING.md](BUILDING.md) for the canonical cold-build workflow.
+
 ## Features
 
 - D3Q19 TRT collision with Guo-style Boussinesq forcing
@@ -29,7 +31,8 @@ geometries defined by colored PLY surface meshes.
 
 ```
 apps/
-├── FluidSim_cpu/          CPU application, build scripts, Slurm launcher
+├── BUILDING.md            Canonical cold-build guide
+├── FluidSim_cpu/          CPU application, local + cluster build scripts, launchers
 ├── FluidSim_gpu/          GPU application, build scripts, Slurm launcher, profiling wrappers
 ├── shared/
 │   ├── geometry/          PLY mesh files
@@ -55,13 +58,16 @@ apps/
 # 1. Set up the code-generation virtual environment once
 ./apps/shared/scripts/install_codegen_venv.sh
 
-# 2. Run locally (builds FluidSim_cpu as needed, then launches a local smoke test)
+# 2. Build locally
 cd apps/FluidSim_cpu
+./build_local.sh
+
+# 3. Run locally
 ./run_sim_local.sh
 ```
 
-For local CPU use, `run_sim_local.sh` is the intended entrypoint. It rebuilds
-`FluidSim_cpu` when needed, runs locally, writes the launcher log to
+For local CPU use, `build_local.sh` and `run_sim_local.sh` are the intended
+pair. The launcher writes the log to
 `apps/FluidSim_cpu/output/logs/run_sim.log`, and writes simulation output under
 `apps/FluidSim_cpu/output/`.
 
@@ -80,25 +86,12 @@ sbatch --nodes=1 --ntasks=1 --cpus-per-task=48 run_sim_cpu.sbatch
 
 See [FluidSim_cpu/README.md](FluidSim_cpu/README.md) for CPU-specific details.
 
-## Quick Start (GPU)
+## Cluster/Manual (CPU/GPU)
 
-```bash
-# 1. Set up the code-generation virtual environment (if not already done)
-./apps/shared/scripts/install_codegen_venv.sh
-
-# 2. Build (cluster/manual path)
-cd apps/FluidSim_gpu
-CUDA_ARCHITECTURES=90 ./build_gpu.sh    # 90 = H100; use 89 for L40S, 70 for V100
-
-# 3. Run (cluster/manual path)
-sbatch --nodes=1 --gres=gpu:2 --ntasks-per-gpu=1 --cpus-per-gpu=2 run_sim_gpu.sbatch
-```
-
-`build_gpu.sh` and `run_sim_gpu.sbatch` are cluster/manual tools. They are not
-needed for the simple local CPU workflow above.
-
-See [FluidSim_gpu/README.md](FluidSim_gpu/README.md) for GPU-specific details,
-including MPI transport modes, profiling, and cluster execution.
+- CPU: see [FluidSim_cpu/README.md](FluidSim_cpu/README.md) for `build_cpu.sh`,
+  `run_sim_cpu.sbatch`, parallel modes, and CPU output layout.
+- GPU: see [FluidSim_gpu/README.md](FluidSim_gpu/README.md) for `build_gpu.sh`,
+  `run_sim_gpu.sbatch`, MPI transport modes, profiling, and GPU execution.
 
 ## Parameter File
 
