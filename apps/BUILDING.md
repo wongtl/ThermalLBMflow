@@ -3,8 +3,11 @@
 # Building ThermalLBMflow
 
 This document captures the canonical cold-build workflow for the public app
-tree. Start from a fresh clone, set up the code-generation environment once,
-then choose the build/run path that matches where you want to execute.
+tree. FluidSim builds directly from the in-tree waLBerla checkout in this
+repository: no extra submodule step is required for the app workflow, and
+app-target prerequisites such as OpenMesh/code-generation support are enforced
+by CMake. Start from a fresh clone, set up the code-generation environment
+once, then choose the build/run path that matches where you want to execute.
 
 ## 1. Clone the repository
 
@@ -83,3 +86,5 @@ sbatch --nodes=1 --gres=gpu:2 --ntasks-per-gpu=1 --cpus-per-gpu=2 run_sim_gpu.sb
 - `build_cpu.sh`, `build_gpu.sh`, and the `sbatch` launchers are the
   cluster/manual workflow.
 - `run_sim_local.sh` uses `apps/shared/params/FluidSim.prm`.
+- The cluster/manual `sbatch` launchers use the fixed parameter-file path
+  configured in the launcher script. Inspect that path before submission.

@@ -10,7 +10,10 @@ lattice Boltzmann method with TRT collision and Boussinesq buoyancy forcing.
 It targets Rayleigh-Bénard and mixed-convection problems in complex 3-D
 geometries defined by colored PLY surface meshes.
 
-See [BUILDING.md](BUILDING.md) for the canonical cold-build workflow.
+See [BUILDING.md](BUILDING.md) for the canonical cold-build workflow. The app
+builds directly from the in-tree waLBerla checkout in this repository, no extra
+submodule step is required for the public app workflow, and relevant app-target
+prerequisites are enforced by CMake.
 
 ## Features
 
@@ -85,6 +88,8 @@ sbatch --nodes=1 --ntasks=1 --cpus-per-task=48 run_sim_cpu.sbatch
 ```
 
 See [FluidSim_cpu/README.md](FluidSim_cpu/README.md) for CPU-specific details.
+The cluster/manual `sbatch` launchers use the fixed parameter-file path
+configured in the script, so inspect that path before submission.
 
 ## Cluster/Manual (CPU/GPU)
 
