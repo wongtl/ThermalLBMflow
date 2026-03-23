@@ -2,10 +2,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "core/Abort.h"
+
+#include <charconv>
 #include <cctype>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -29,7 +34,15 @@ inline std::optional<unsigned long long> parseCollectorFromPathToken(const std::
         if (c < '0' || c > '9')
             return std::nullopt;
     }
-    return std::stoull(numberToken);
+
+    unsigned long long collector = 0;
+    const char* begin = numberToken.data();
+    const char* end = begin + numberToken.size();
+    const auto parseResult = std::from_chars(begin, end, collector);
+    if (parseResult.ec != std::errc() || parseResult.ptr != end)
+        return std::nullopt;
+
+    return collector;
 }
 
 inline std::string formatRealForVtkSeries(double value)
@@ -157,6 +170,9 @@ inline void rescaleVthbSeriesTimes(const std::filesystem::path& seriesPath, doub
 
 inline void rescaleVtkTimeMetadata(const std::string& baseFolder, const std::string& identifier, double scale, double offset = 0.0)
 {
+    if (!std::isfinite(scale) || !std::isfinite(offset))
+        WALBERLA_ABORT("rescaleVtkTimeMetadata requires finite scale and offset.");
+
     rescalePvdTimes(std::filesystem::path(baseFolder) / (identifier + ".pvd"), scale, offset);
     rescaleVthbSeriesTimes(std::filesystem::path(baseFolder) / (identifier + ".vthb.series"), scale, offset);
 }

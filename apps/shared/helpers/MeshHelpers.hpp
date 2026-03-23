@@ -6,8 +6,10 @@
 #include "core/mpi/Broadcast.h"
 #include "mesh_common/MeshIO.h"
 
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <string>
 
@@ -29,19 +31,30 @@ inline void readMeshFromRootAndBroadcast(
         if (!std::filesystem::exists(filename))
             WALBERLA_ABORT("The mesh file \"" << filenameStr << "\" does not exist!");
 
-        std::ifstream stream;
-        if (binaryFile)
-            stream.open(filenameStr.c_str(), std::ifstream::in | std::ifstream::binary);
-        else
-            stream.open(filenameStr.c_str(), std::ifstream::in);
+        std::error_code fileSizeEc;
+        const auto fileSize = std::filesystem::file_size(filename, fileSizeEc);
+        if (fileSizeEc)
+            WALBERLA_ABORT("Error while reading file \"" << filenameStr << "\": " << fileSizeEc.message());
+
+        if (fileSize > std::uintmax_t(std::numeric_limits<std::string::size_type>::max()))
+            WALBERLA_ABORT("The mesh file \"" << filenameStr << "\" is too large to read into memory.");
+
+        if (fileSize > std::uintmax_t(std::numeric_limits<std::streamsize>::max()))
+            WALBERLA_ABORT("The mesh file \"" << filenameStr << "\" is too large to read through std::ifstream.");
+
+        std::ifstream stream(filenameStr.c_str(), std::ifstream::in | std::ifstream::binary);
 
         if (!stream)
             WALBERLA_ABORT("Error while reading file \"" << filenameStr << "\"!");
 
-        stream.seekg(0, std::ios::end);
-        payload.reserve(static_cast<std::string::size_type>(stream.tellg()));
-        stream.seekg(0, std::ios::beg);
-        payload.assign((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
+        payload.resize(static_cast<std::string::size_type>(fileSize));
+
+        if (!payload.empty())
+        {
+            stream.read(payload.data(), static_cast<std::streamsize>(payload.size()));
+            if (!stream || stream.gcount() != static_cast<std::streamsize>(payload.size()))
+                WALBERLA_ABORT("Error while reading file \"" << filenameStr << "\"!");
+        }
     }
 
     walberla::mpi::broadcastObject(payload);
