@@ -126,6 +126,7 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
 
     const auto checkpointPaths = binding.checkpointPaths;
     const auto& geometryRegions = binding.checkpointRegions;
+    const bool pruneOpenEdge = binding.pruneOpenEdge;
     const auto& nuOutputRegions = binding.nuOutputRegions;
     const auto& nuVtkFields = binding.nuVtkFields;
     std::unordered_map<walberla::uint16_t, size_t> nuOutputSlotByRegionId;
@@ -279,6 +280,7 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
         out << "periodic=" << (periodicFlags[0] ? 1 : 0) << ","
             << (periodicFlags[1] ? 1 : 0) << ","
             << (periodicFlags[2] ? 1 : 0) << "\n";
+        out << "prune_open_edge=" << (pruneOpenEdge ? 1 : 0) << "\n";
     };
 
     auto cleanupCheckpointAuxDirs = [&](const std::filesystem::path& checkpointDir, const char* context) {
@@ -897,7 +899,7 @@ int runFluidSimRuntime(FluidSimRuntimeBindings& binding)
         vtkOutput->addCellDataWriter(
             std::make_shared<walberla::field::VTKWriter<ScalarField, walberla::float32>>(thetaID, "theta"));
         vtkOutput->addCellDataWriter(std::make_shared<walberla::field::VTKWriter<CellTypeField>>(cellTypeID, "cellType"));
-        vtkOutput->addCellDataWriter(std::make_shared<walberla::field::VTKWriter<BcField>>(bcIdID, "bcId"));
+        vtkOutput->addCellDataWriter(std::make_shared<walberla::field::VTKWriter<RegionIdField>>(regionIdID, "regionId"));
         for (const auto& nuField : nuVtkFields)
             vtkOutput->addCellDataWriter(
                 std::make_shared<walberla::field::VTKWriter<ScalarField, walberla::float32>>(

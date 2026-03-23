@@ -88,6 +88,8 @@ Parameters
 
 ColorBC
 {
+    pruneOpenEdge true;    // when true, prune non-face-adjacent INLET/OUTLET/PRESSURE support unless backed by >=2 face seeds
+
     // region name semantics:
     //   DIRICHLET<N> / ADIABATIC<N> / HEATLOAD<N> / INLET<N> / OUTLET<N> / PRESSURE<N>
     //   where <N> is a positive integer suffix (not empty, not all zeros).

@@ -114,6 +114,7 @@ struct FluidSimRuntimeBindings
     walberla::Vector3<uint_t> cellsPerBlock;
     walberla::Vector3<uint_t> paddingFineCells;
     walberla::Vector3<bool> periodicFlags;
+    bool pruneOpenEdge = false;
 
     uint_t vtkWriteFrequency = uint_t(0);
     double dtPhysFine = 0.0;
