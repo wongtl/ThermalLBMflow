@@ -52,23 +52,29 @@ apps/
 ## Quick Start (CPU)
 
 ```bash
-# 1. Set up the code-generation virtual environment
+# 1. Set up the code-generation virtual environment once
 ./apps/shared/scripts/install_codegen_venv.sh
 
-# 2. Build
+# 2. Run locally (builds FluidSim_cpu as needed, then launches a local smoke test)
 cd apps/FluidSim_cpu
-./build_cpu.sh
-
-# 3. Run (local, single-rank, 1 timestep + VTK mesh output)
 ./run_sim_local.sh
 ```
 
-The local launcher uses `shared/params/FluidSim.prm` as the parameter file.
-Edit it to point at your geometry and configure physics.
+For local CPU use, `run_sim_local.sh` is the intended entrypoint. It rebuilds
+`FluidSim_cpu` when needed, runs locally, writes the launcher log to
+`apps/FluidSim_cpu/output/logs/run_sim.log`, and writes simulation output under
+`apps/FluidSim_cpu/output/`.
 
-For Slurm clusters:
+The repository ships a public example parameter file in
+`shared/params/FluidSim.prm`. The local launcher currently uses the parameter
+file configured in `run_sim_local.sh`.
+
+For cluster/manual workflows, use the dedicated build and launcher scripts:
 
 ```bash
+cd apps/FluidSim_cpu
+./build_cpu.sh
+
 sbatch --nodes=1 --ntasks=1 --cpus-per-task=48 run_sim_cpu.sbatch
 ```
 
@@ -80,16 +86,19 @@ See [FluidSim_cpu/README.md](FluidSim_cpu/README.md) for CPU-specific details.
 # 1. Set up the code-generation virtual environment (if not already done)
 ./apps/shared/scripts/install_codegen_venv.sh
 
-# 2. Build (submits a Slurm build job by default)
+# 2. Build (cluster/manual path)
 cd apps/FluidSim_gpu
 CUDA_ARCHITECTURES=90 ./build_gpu.sh    # 90 = H100; use 89 for L40S, 70 for V100
 
-# 3. Run
+# 3. Run (cluster/manual path)
 sbatch --nodes=1 --gres=gpu:2 --ntasks-per-gpu=1 --cpus-per-gpu=2 run_sim_gpu.sbatch
 ```
 
-See [FluidSim_gpu/README.md](FluidSim_gpu/README.md) for GPU-specific details
-including MPI transport modes and profiling.
+`build_gpu.sh` and `run_sim_gpu.sbatch` are cluster/manual tools. They are not
+needed for the simple local CPU workflow above.
+
+See [FluidSim_gpu/README.md](FluidSim_gpu/README.md) for GPU-specific details,
+including MPI transport modes, profiling, and cluster execution.
 
 ## Parameter File
 

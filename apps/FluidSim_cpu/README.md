@@ -4,7 +4,13 @@
 
 CPU build of ThermalLBMflow.
 
-## Build
+## Recommended Workflows
+
+- Local users: run `run_sim_local.sh`.
+  It is the intended local entrypoint and handles the local rebuild itself.
+- Cluster/manual users: use `build_cpu.sh` and `run_sim_cpu.sbatch`.
+
+## Build (Cluster / Manual)
 
 ```bash
 ./build_cpu.sh
@@ -14,17 +20,21 @@ CPU build of ThermalLBMflow.
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `BUILD_CLUSTER` | Slurm cluster for build job | (none — local build if unset) |
-| `BUILD_PARTITION` | Slurm partition | (none) |
-| `BUILD_TIME` | Slurm time limit | `02:00:00` |
-| `BUILD_MEM` | Slurm memory | `8G` |
+| `BUILD_USE_SRUN` | Use the cluster `srun` wrapper (`1`) or build directly in the current shell (`0`) | `1` |
+| `BUILD_CLUSTER` | Slurm cluster for the build job when `BUILD_USE_SRUN=1` | `arc` |
+| `BUILD_PARTITION` | Slurm partition when `BUILD_USE_SRUN=1` | `interactive` |
+| `BUILD_TIME` | Slurm time limit when `BUILD_USE_SRUN=1` | `01:00:00` |
+| `BUILD_MEM` | Slurm memory when `BUILD_USE_SRUN=1` | `16G` |
 | `BUILD_CPUS_PER_TASK` | Build parallelism | `8` |
-| `TOOLCHAIN_MODULE` | Compiler module to load | (none) |
-| `MPI_MODULE` | MPI module to load | (none) |
-| `PYTHON_MODULE` | Python module to load | (none) |
-| `CMAKE_MODULE` | CMake module to load | (none) |
+| `TOOLCHAIN_MODULE` | Compiler module to load | `foss/2024a` |
+| `MPI_MODULE` | MPI module to load | (empty) |
+| `PYTHON_MODULE` | Python module to load | `Python/3.12.3-GCCcore-13.3.0` |
+| `CMAKE_MODULE` | CMake module to load | (empty) |
 | `TARGET` | CMake build target | `FluidSim_cpu` |
 | `RECONFIGURE` | Force CMake reconfigure | `0` |
+
+For a normal local workflow you usually do not need this script. Use
+`run_sim_local.sh` instead.
 
 ## Run (Local)
 
@@ -32,9 +42,10 @@ CPU build of ThermalLBMflow.
 ./run_sim_local.sh
 ```
 
-This runs a single-rank, single-timestep mesh-only job using
-`../shared/params/FluidSim.prm`. Useful for verifying the geometry setup
-before submitting production runs.
+This is the intended local entrypoint. It performs a local rebuild of
+`FluidSim_cpu` if needed, then runs a single-rank, single-timestep mesh-only
+job using the parameter file currently configured in the script. It is useful
+for verifying the geometry setup before moving to longer runs or cluster jobs.
 
 Environment overrides: `NP`, `OMP_NUM_THREADS`, `BUILD_JOBS`.
 
@@ -69,6 +80,8 @@ Default is `outer`. The launcher sets this via the `--parallelMode` flag.
 
 ## Output
 
-- VTK files: `output/<jobid>/output/vtk/`
-- Checkpoints: `output/<jobid>/output/checkpoint/`
-- Log file (local runs): `output/logs/run_sim.log`
+- Local launcher log: `output/logs/run_sim.log`
+- Local simulation output: `output/vtk/` and `output/checkpoint/`
+- Cluster job log: `output/<jobid>/run_sim_cpu-<jobid>.log`
+- Cluster Slurm logs: `output/<jobid>/slurm-<jobid>.out` and `output/<jobid>/slurm-<jobid>.err`
+- Cluster simulation output: `output/<jobid>/vtk/` and `output/<jobid>/checkpoint/`

@@ -1,8 +1,10 @@
 <!-- SPDX-FileCopyrightText: 2026 David Wong, University of Oxford -->
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-# FluidSim_gpu (Production Contract)
+# FluidSim_gpu
 
-This app is the production GPU run path for FluidSim on ARC/HTC.
+GPU build/runtime path for FluidSim. In the current workflow this is the
+cluster/manual path; local users typically only need
+`apps/FluidSim_cpu/run_sim_local.sh`.
 
 ## Scope
 
@@ -72,7 +74,7 @@ Mode policy is applied only for multi-rank runs (`SLURM_NTASKS > 1`).
 Preflight is fail-fast: requested unavailable components abort launch (no silent fallback).
 Resolved transport mode and MCA values are printed into the job log header.
 
-## Build + Run
+## Build + Run (Cluster / Manual)
 
 Build on HTC compute/interactive resources:
 
@@ -83,6 +85,8 @@ Build on HTC compute/interactive resources:
 Supported `build_gpu.sh` environment overrides:
 - Build resources: `BUILD_CLUSTER`, `BUILD_PARTITION`, `BUILD_TIME`, `BUILD_MEM`, `BUILD_CPUS_PER_TASK`
 - Build behavior: `TARGET`, `RECONFIGURE`
+- `BUILD_USE_SRUN=1` uses the cluster `srun` wrapper (default); `BUILD_USE_SRUN=0`
+  builds directly in the current shell if you have already prepared the environment
 - Tool/modules: `TOOLCHAIN_MODULE`, `PYTHON_MODULE`, `MPI_MODULE`, `GPU_MODULE`, `CMAKE_MODULE`
 - CUDA arch selection: `CUDA_ARCHITECTURES`
   - Choose archs matching your GPU(s): V100=`70`, L40S=`89`, H100=`90`
@@ -100,8 +104,16 @@ sbatch --nodes=1 --gres=gpu:2 --ntasks-per-gpu=1 --cpus-per-gpu=2 run_sim_gpu.sb
 #   run_sim_gpu.sbatch
 ```
 
-Path resolution is automatic for `build_gpu.sh` and `profile_loop_gpu.sh` (derived from script location).
+Path resolution is automatic for `build_gpu.sh` and `profile_loop_gpu.sh`
+(derived from script location).
 `run_sim_gpu.sbatch` derives paths from `SLURM_SUBMIT_DIR`; submit from `walberla/apps/FluidSim_gpu`.
+
+For the simple local/public workflow, use the CPU local launcher instead:
+
+```bash
+cd apps/FluidSim_cpu
+./run_sim_local.sh
+```
 
 ## Restart / Checkpoints
 
