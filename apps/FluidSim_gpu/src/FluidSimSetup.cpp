@@ -2106,6 +2106,18 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
                 walberla::mpi::MPIManager::instance()->comm());
         }
     }
+    for (size_t regionIdx = size_t(0); regionIdx < colorRegions.size(); ++regionIdx)
+    {
+        if (boundarySolidByRegionGlobal[regionIdx] == std::uint64_t(0))
+        {
+            const auto& region = colorRegions[regionIdx];
+            WALBERLA_ABORT("Enabled ColorBC.Region '" << region.uidName
+                           << "' matched zero boundary solid cells."
+                           << " rgb=<" << region.r << "," << region.g << "," << region.b << ">"
+                           << " bcId=" << int(region.bcId)
+                           << ". This is a configuration error; check mesh colors and Region definitions.");
+        }
+    }
     std::uint64_t inletBoundarySolidGlobal = 0;
     std::uint64_t outletBoundarySolidGlobal = 0;
     std::uint64_t pressureBoundarySolidGlobal = 0;
