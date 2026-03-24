@@ -1,77 +1,86 @@
-# waLBerla
+<!-- SPDX-FileCopyrightText: 2026 David Wong, University of Oxford -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+# ThermalLBMflow
 
-waLBerla (widely applicable Lattice Boltzmann from Erlangen) is a massively parallel framework for multiphysics simulation applications.
-Beyond computational fluid dynamics with the lattice Boltzmann method, the framework now features multiphase and free-surface flows,
-rigid body and particle dynamics as well as fluid-structure coupling with moving geometries.
-It scales from laptops to current and future supercomputers while maintaining
-near-perfect efficiency.
+ThermalLBMflow is a thermal lattice Boltzmann flow solver for buoyancy-driven
+and mixed-convection simulations in complex 3-D geometries.
 
-## Getting Started with waLBerla
+It is built on top of the in-tree
+[waLBerla](https://walberla.net/) checkout contained in this repository and
+provides CPU and GPU applications for Rayleigh-Benard and related thermal-flow
+problems defined by colored PLY surface meshes.
 
-Refer to our [Setup Guide](https://walberla.pages.i10git.cs.fau.de/walberla/setup-instructions.html) for instructions
-on setting up and building waLBerla.
+## Start Here
 
-## Documentation and Tutorials
+- App overview and workflow split: [apps/README.md](apps/README.md)
+- Canonical cold-build guide: [apps/BUILDING.md](apps/BUILDING.md)
+- CPU app details: [apps/FluidSim_cpu/README.md](apps/FluidSim_cpu/README.md)
+- GPU app details: [apps/FluidSim_gpu/README.md](apps/FluidSim_gpu/README.md)
 
-You can find our framework documentation, guides, tutorials, and examples on the following pages:
+## What This Repository Contains
 
- - Latest Release: [C++ Framework](http://walberla.net/doxygen/index.html), [Python Interface](http://walberla.net/sphinx/index.html)
- - Current Development Revision: [C++ Framework](walberla.pages.i10git.cs.fau.de/walberla/)
+This repository includes:
 
-## Get involved
+- the ThermalLBMflow application under `apps/`
+- the waLBerla framework source used to build it
+- code-generation tooling and shared helper scripts
+- public example geometry and parameter files for local and cluster workflows
 
-### Contributing
+ThermalLBMflow builds directly from the waLBerla checkout already present in
+this repository. No extra submodule step is required for the app workflow.
+Relevant app-target prerequisites are enforced by CMake.
 
-Please refer to the [contribution guide](CONTRIBUTING.md) for guidance on contributing to waLBerla.
+## Quick Start
 
-### Support
+```bash
+# 1. Set up the code-generation environment once
+./apps/shared/scripts/install_codegen_venv.sh
 
-To get in touch with the waLBerla developers, use our [Issue Tracker](https://i10git.cs.fau.de/walberla/walberla/issues)
-or the waLBerla mailing list ([cs10-walberla@fau.de](mailto:cs10-walberla@fau.de)).
+# 2. Build the local CPU app
+cd apps/FluidSim_cpu
+./build_local.sh
 
-## Authors
+# 3. Run the local example
+./run_sim_local.sh
+```
 
-Many thanks go to waLBerla's [contributors](AUTHORS.txt)
+For cluster or manual workflows, use the dedicated CPU/GPU build scripts and
+`sbatch` launchers documented in [apps/BUILDING.md](apps/BUILDING.md).
 
-### Please cite us
+## Repository Layout
 
-If you use waLBerla in a publication, please cite the following articles:
+```text
+apps/
+  BUILDING.md            Public build and run guide
+  README.md              App-level overview
+  FluidSim_cpu/          CPU application and launchers
+  FluidSim_gpu/          GPU application and launchers
+  shared/                Parameter files, geometry, helpers, scripts
+src/                     waLBerla core framework sources
+python/                  waLBerla Python components
+```
 
-Overview:
-- M. Bauer et al., *waLBerla: A block-structured high-performance framework for
-  multiphysics simulations*. Computers & Mathematics with Applications, 2020.
-  https://doi.org/10.1016/j.camwa.2020.01.007.
+## Upstream waLBerla Context
 
-Grid Refinement:
-- F. Schornbaum and U. Rüde, *Massively parallel algorithms for the lattice Boltzmann
-  method on nonuniform grids*. SIAM Journal on Scientific Computing, 2016.
-  https://doi.org/10.1137/15M1035240
+ThermalLBMflow builds on waLBerla, a high-performance block-structured
+multiphysics framework. This repository contains an application-focused fork
+that keeps the upstream waLBerla source tree in place so the app can build from
+one checkout.
 
-LBM - Particle Coupling:
-- C. Rettinger and U. Rüde, *A comparative study of fluid-particle coupling methods for
-  fully resolved lattice Boltzmann simulations*. Computers & Fluids, 2017.
-  https://doi.org/10.1016/j.compfluid.2017.05.033
+If you are looking for the general-purpose upstream framework, documentation, or
+its broader feature set, see:
 
-Free-surface LBM:
-- C. Schwarzmeier et al., *Comparison of free-surface and conservative Allen-Cahn phase-field
-  lattice Boltzmann method*. Journal of Computational Physics, 2023.
-  https://doi.org/10.1016/j.jcp.2022.111753
+- waLBerla project site: <https://walberla.net/>
+- waLBerla documentation: <https://walberla.net/doxygen/index.html>
+- upstream source project: <https://i10git.cs.fau.de/walberla/walberla>
 
-Allen-Cahn phase-field LBM
-- M. Holzer et al., *Highly efficient lattice Boltzmann multiphase simulations of immiscible
-  fluids at high-density ratios on CPUs and GPUs through code generation*. The International Journal of High Performance Computing Applications, 2021.
-  https://doi.org/10.1177/10943420211016525
+## Contributing
 
-MESA-PD:
-- S. Eibl and U. Rüde, *A Modular and Extensible Software Architecture for Particle Dynamics*.
-  Proceedings of the 8th International Conference on Discrete Element Methods.
-  https://mercurylab.co.uk/dem8/full-papers/#page-content
-
-Carbon Nanotubes:
-- G. Drozdov et al., *Densification of single-walled carbon nanotube films:
-  Mesoscopic distinct element method simulations and experimental validation*.
-  Journal of Applied Physics, 2020. https://doi.org/10.1063/5.0025505
+Contributions to this repository go through GitHub. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the project-specific contribution
+workflow.
 
 ## License
 
-waLBerla is licensed under [GPLv3](COPYING.txt).
+ThermalLBMflow is distributed under GPL-3.0-or-later. See [COPYING.txt](COPYING.txt)
+and [apps/LICENSE](apps/LICENSE).

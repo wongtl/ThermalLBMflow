@@ -86,8 +86,8 @@ Launcher-owned knobs (set as environment variables before `sbatch`):
 | `MPI_MODULE` | MPI module | (none) |
 | `CPU_MODULE` | CPU-specific module | (none) |
 
-The parameter file path is fixed inside `run_sim_cpu.sbatch`; inspect the
-launcher script before submission if you want to change it.
+The parameter file path is fixed to `../shared/params/FluidSim.prm` inside
+`run_sim_cpu.sbatch`.
 
 ## Parallel Modes
 

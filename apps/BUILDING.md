@@ -86,5 +86,5 @@ sbatch --nodes=1 --gres=gpu:2 --ntasks-per-gpu=1 --cpus-per-gpu=2 run_sim_gpu.sb
 - `build_cpu.sh`, `build_gpu.sh`, and the `sbatch` launchers are the
   cluster/manual workflow.
 - `run_sim_local.sh` uses `apps/shared/params/FluidSim.prm`.
-- The cluster/manual `sbatch` launchers use the fixed parameter-file path
-  configured in the launcher script. Inspect that path before submission.
+- `run_sim_cpu.sbatch` and `run_sim_gpu.sbatch` use
+  `apps/shared/params/FluidSim.prm`.

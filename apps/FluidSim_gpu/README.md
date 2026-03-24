@@ -40,8 +40,8 @@ cluster/manual path; local users typically only need
 - `TOOLCHAIN_MODULE`
 - `GPU_MODULE`
 
-Parameter file is fixed to the path configured in `run_sim_gpu.sbatch` (not a
-supported override knob).
+Parameter file is fixed to `$APP_DIR/../shared/params/FluidSim.prm` in
+`run_sim_gpu.sbatch` (not a supported override knob).
 Simulation length is launcher-owned via `TIMESTEPS` (passed as `--timesteps`).
 This launcher owns app flags; positional app CLI args are rejected.
 Path variables are launcher-managed and not supported override knobs in production

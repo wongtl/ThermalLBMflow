@@ -88,8 +88,7 @@ sbatch --nodes=1 --ntasks=1 --cpus-per-task=48 run_sim_cpu.sbatch
 ```
 
 See [FluidSim_cpu/README.md](FluidSim_cpu/README.md) for CPU-specific details.
-The cluster/manual `sbatch` launchers use the fixed parameter-file path
-configured in the script, so inspect that path before submission.
+The cluster/manual `sbatch` launchers use `shared/params/FluidSim.prm`.
 
 ## Cluster/Manual (CPU/GPU)
 
