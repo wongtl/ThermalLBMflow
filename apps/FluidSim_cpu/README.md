@@ -39,14 +39,14 @@ Environment overrides:
 | Variable | Purpose | Default |
 |---|---|---|
 | `BUILD_USE_SRUN` | Use the cluster `srun` wrapper (`1`) or build directly in the current shell (`0`) | `1` |
-| `BUILD_CLUSTER` | Slurm cluster for the build job when `BUILD_USE_SRUN=1` | `arc` |
-| `BUILD_PARTITION` | Slurm partition when `BUILD_USE_SRUN=1` | `interactive` |
+| `BUILD_CLUSTER` | Optional Slurm cluster for the build job when `BUILD_USE_SRUN=1` | (empty) |
+| `BUILD_PARTITION` | Optional Slurm partition when `BUILD_USE_SRUN=1` | (empty) |
 | `BUILD_TIME` | Slurm time limit when `BUILD_USE_SRUN=1` | `01:00:00` |
 | `BUILD_MEM` | Slurm memory when `BUILD_USE_SRUN=1` | `16G` |
 | `BUILD_CPUS_PER_TASK` | Build parallelism | `8` |
-| `TOOLCHAIN_MODULE` | Compiler module to load | `foss/2024a` |
+| `TOOLCHAIN_MODULE` | Optional compiler module to load | (empty) |
 | `MPI_MODULE` | MPI module to load | (empty) |
-| `PYTHON_MODULE` | Python module to load | `Python/3.12.3-GCCcore-13.3.0` |
+| `PYTHON_MODULE` | Optional Python module to load | (empty) |
 | `CMAKE_MODULE` | CMake module to load | (empty) |
 | `TARGET` | CMake build target | `FluidSim_cpu` |
 | `RECONFIGURE` | Force CMake reconfigure | `0` |
