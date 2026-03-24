@@ -30,7 +30,7 @@ cluster/manual path; local users typically only need
 - Runtime enforces explicit local-rank GPU device selection.
 - MPI rank binding policy: single-rank uses `--bind-to none`; multi-rank uses `--bind-to core --map-by slot:PE=<cpus-per-rank>`.
 
-## Supported Knobs (Production sbatch)
+## Supported Knobs (GPU sbatch launcher)
 
 - `CHECKPOINT_EVERY`
 - `VTKEVERY`
@@ -44,7 +44,7 @@ Parameter file is fixed to `$APP_DIR/../shared/params/FluidSim.prm` in
 `run_sim_gpu.sbatch` (not a supported override knob).
 Simulation length is launcher-owned via `TIMESTEPS` (passed as `--timesteps`).
 This launcher owns app flags; positional app CLI args are rejected.
-Path variables are launcher-managed and not supported override knobs in production
+Path variables are launcher-managed and not supported override knobs in this launcher
 (`APP_DIR`, `EXE`, `OUTDIR`).
 VTK output base directory is fixed to `output`.
 
@@ -58,15 +58,15 @@ VTK output base directory is fixed to `output`.
 - Nsight reports are written directly to `apps/FluidSim_gpu/output/profiling/<jobid>/...`
   by the wrappers.
 
-## MPI Transport Modes (P0 Experiment Lane)
+## MPI Transport Modes
 
 `run_sim_gpu.sbatch` supports a launcher-owned transport selector:
 
-- `MPI_TRANSPORT_MODE=ob1_stable` (default, production):
+- `MPI_TRANSPORT_MODE=ob1_stable` (default):
   - `OMPI_MCA_pml=ob1`
   - `OMPI_MCA_btl=self,vader,tcp`
   - `OMPI_MCA_btl_vader_single_copy_mechanism=none`
-- `MPI_TRANSPORT_MODE=ob1_smcuda` (experiment):
+- `MPI_TRANSPORT_MODE=ob1_smcuda` (optional alternative):
   - `OMPI_MCA_pml=ob1`
   - `OMPI_MCA_btl=self,smcuda,tcp`
   - preflight requires `btl:smcuda` to exist (`ompi_info` check)
@@ -77,7 +77,7 @@ Resolved transport mode and MCA values are printed into the job log header.
 
 ## Build + Run (Cluster / Manual)
 
-Build on HTC compute/interactive resources:
+Build on your cluster or prepared HPC shell:
 
 ```bash
 ./build_gpu.sh
@@ -93,14 +93,14 @@ Supported `build_gpu.sh` environment overrides:
   - Choose archs matching your GPU(s): V100=`70`, L40S=`89`, H100=`90`
   - Example: `CUDA_ARCHITECTURES=89 ./build_gpu.sh`
 
-Run production job:
+Run a batch job:
 
 ```bash
 cd walberla/apps/FluidSim_gpu
 sbatch --nodes=1 --gres=gpu:2 --ntasks-per-gpu=1 --cpus-per-gpu=2 run_sim_gpu.sbatch
 
-# ARC/HTC only (optional cluster routing flags):
-# sbatch --clusters=htc --partition=short \
+# Example with optional site-specific routing flags:
+# sbatch --clusters=<cluster> --partition=<partition> \
 #   --nodes=1 --gres=gpu:2 --ntasks-per-gpu=1 --cpus-per-gpu=2 \
 #   run_sim_gpu.sbatch
 ```

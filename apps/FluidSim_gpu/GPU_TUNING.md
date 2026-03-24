@@ -1,8 +1,8 @@
 <!-- SPDX-FileCopyrightText: 2026 David Wong, University of Oxford -->
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-# FluidSim_gpu Production Runtime and Profiling Defaults
+# FluidSim_gpu Runtime and Profiling Defaults
 
-## Production runtime profile (fixed in code)
+## Runtime profile (fixed in code)
 
 `GpuReductions.cu` now uses a single built-in launch profile:
 
@@ -13,12 +13,12 @@
 - `nuTPB=256`
 - `gridCapX=65535`
 
-All `FLUIDSIM_GPU_*` launch env tuning knobs were removed from the production path.
+All `FLUIDSIM_GPU_*` launch env tuning knobs were removed from the default path.
 The launch config above is compile-time fixed and logged once as `profile=production_default`.
 
 ## Runtime policy (sbatch)
 
-`run_sim_gpu.sbatch` is production-only:
+`run_sim_gpu.sbatch` provides the standard GPU batch-launch path:
 
 - Launcher: `mpirun` (fixed)
 - Host orchestration: serial (fixed)
@@ -56,11 +56,11 @@ Path resolution is automatic for `build_gpu.sh` and `profile_loop_gpu.sh` (deriv
 
 Parameter file is fixed to `$APP_DIR/../shared/params/FluidSim.prm` in `run_sim_gpu.sbatch` (not a supported override knob).
 The launcher owns app runtime flags; positional app CLI args are rejected.
-Path variables are launcher-managed and not supported override knobs in production
+Path variables are launcher-managed and not supported override knobs in this launcher
 (`APP_DIR`, `EXE`, `OUTDIR`).
 VTK output base directory is fixed to `output`.
 
-## Profiling wrappers (separate from production path)
+## Profiling wrappers (separate from the default run path)
 
 Profiling is wrapper-driven: `profile_loop_gpu.sh` sets `FLUIDSIM_PROFILE_MODE` for `run_sim_gpu.sbatch`.
 `profile_loop_gpu.sh` also passes through `MPI_TRANSPORT_MODE` to submitted jobs.
@@ -72,12 +72,12 @@ Use wrappers:
 - Nsight reports are written directly to `apps/FluidSim_gpu/output/profiling/<jobid>/...`
   by the wrappers.
 
-## MPI transport experiment modes (P0)
+## MPI transport modes
 
 `MPI_TRANSPORT_MODE` values for multi-rank runs:
 
-- `ob1_stable` (default, production): pinned `ob1 + self,vader,tcp`
-- `ob1_smcuda` (experiment): `pml=ob1`, force `btl=self,smcuda,tcp` (with `tcp` fallback)
+- `ob1_stable` (default): pinned `ob1 + self,vader,tcp`
+- `ob1_smcuda` (optional alternative): `pml=ob1`, force `btl=self,smcuda,tcp` (with `tcp` fallback)
   - fail-fast preflight if `btl:smcuda` is unavailable
 
 No silent fallback is performed: if a requested mode is unavailable, launch aborts with an actionable message.
@@ -91,7 +91,7 @@ Fixed Nsight defaults in wrappers:
   - `--cuda-event-trace=false`
   - report base is fixed to `apps/FluidSim_gpu/output/profiling/<jobid>/nsys-report-r<rank>`
 - Nsight Compute:
-  - default section set is unset (more portable across cluster nodes)
+  - default section set is unset (more portable across different clusters)
   - optional override: set `NCU_SET=<set_name>` (for example `NCU_SET=basic` or `NCU_SET=detailed`)
   - profiles all kernels (no kernel-name filter)
   - `--launch-skip 0`
