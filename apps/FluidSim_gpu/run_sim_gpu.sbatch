@@ -2,8 +2,8 @@
 # SPDX-FileCopyrightText: 2026 David Wong, University of Oxford
 # SPDX-License-Identifier: GPL-3.0-or-later
 #SBATCH --job-name=fs_gpu
-## CPU/GPU example (set at submit time):
-## sbatch --clusters=htc --partition=short run_sim_gpu.sbatch
+## Example submit (set partition/account/GPU options for your site):
+## sbatch --partition=<partition> --gres=gpu:<N> run_sim_gpu.sbatch
 #SBATCH --time=12:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-gpu=1
@@ -41,8 +41,8 @@ SHARED_DIR="$APP_DIR/../shared"
 PARAMS="$SHARED_DIR/params/FluidSim.prm"
 
 # Module/loading knobs.
-TOOLCHAIN_MODULE="${TOOLCHAIN_MODULE:-foss/2024a}"
-GPU_MODULE="${GPU_MODULE:-CUDA/12.9.0}"
+TOOLCHAIN_MODULE="${TOOLCHAIN_MODULE:-}"
+GPU_MODULE="${GPU_MODULE:-}"
 MPI_MODULE="${MPI_MODULE:-}"
 
 # Runtime knobs (launcher-owned, environment-overridable).

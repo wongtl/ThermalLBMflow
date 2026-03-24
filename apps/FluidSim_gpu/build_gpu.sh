@@ -18,20 +18,20 @@ RECONFIGURE="${RECONFIGURE:-0}"
 BUILD_USE_SRUN="${BUILD_USE_SRUN:-1}"
 
 # Module options (set empty to skip).
-TOOLCHAIN_MODULE="${TOOLCHAIN_MODULE:-foss/2024a}"
-PYTHON_MODULE="${PYTHON_MODULE:-Python/3.12.3-GCCcore-13.3.0}"
+TOOLCHAIN_MODULE="${TOOLCHAIN_MODULE:-}"
+PYTHON_MODULE="${PYTHON_MODULE:-}"
 MPI_MODULE="${MPI_MODULE:-}"
-GPU_MODULE="${GPU_MODULE:-CUDA/12.9.0}"
-CMAKE_MODULE="${CMAKE_MODULE:-CMake/3.29.3-GCCcore-13.3.0}"
+GPU_MODULE="${GPU_MODULE:-}"
+CMAKE_MODULE="${CMAKE_MODULE:-}"
 
 # CUDA build options.
 # Set CUDA_ARCHITECTURES to match your GPU(s): V100=70, L40S=89, H100=90.
 # Example single-arch build: CUDA_ARCHITECTURES=89 ./build_gpu.sh
 CUDA_ARCHITECTURES="${CUDA_ARCHITECTURES:-70;89;90}"
 
-# Slurm allocation defaults.
-BUILD_CLUSTER="${BUILD_CLUSTER:-htc}"
-BUILD_PARTITION="${BUILD_PARTITION:-interactive}"
+# Optional Slurm routing/resource defaults.
+BUILD_CLUSTER="${BUILD_CLUSTER:-}"
+BUILD_PARTITION="${BUILD_PARTITION:-}"
 BUILD_TIME="${BUILD_TIME:-01:00:00}"
 BUILD_MEM="${BUILD_MEM:-16G}"
 
@@ -49,14 +49,18 @@ if [[ "${BUILD_USE_SRUN}" == "1" && "${FLUIDSIM_BUILD_INNER:-0}" != "1" ]]; then
     # Prevent accidental reuse of stale allocation context from shell env.
     unset SLURM_JOB_ID SLURM_JOBID SLURM_STEP_ID SLURM_STEPID SLURM_NTASKS SLURM_CPUS_PER_TASK SLURM_JOB_NUM_NODES SLURM_NNODES
 
+    SRUN_ARGS=(
+        --time="$BUILD_TIME"
+        --ntasks=1
+        --cpus-per-task="$BUILD_CPUS_PER_TASK"
+        --chdir="$PROJECT_ROOT"
+    )
+    [[ -n "$BUILD_CLUSTER" ]] && SRUN_ARGS+=(--clusters="$BUILD_CLUSTER")
+    [[ -n "$BUILD_PARTITION" ]] && SRUN_ARGS+=(--partition="$BUILD_PARTITION")
+    [[ -n "$BUILD_MEM" ]] && SRUN_ARGS+=(--mem="$BUILD_MEM")
+
     exec srun \
-        --clusters="$BUILD_CLUSTER" \
-        --partition="$BUILD_PARTITION" \
-        --time="$BUILD_TIME" \
-        --ntasks=1 \
-        --cpus-per-task="$BUILD_CPUS_PER_TASK" \
-        --mem="$BUILD_MEM" \
-        --chdir="$PROJECT_ROOT" \
+        "${SRUN_ARGS[@]}" \
         /usr/bin/env \
         FLUIDSIM_BUILD_INNER=1 \
         BUILD_USE_SRUN="$BUILD_USE_SRUN" \

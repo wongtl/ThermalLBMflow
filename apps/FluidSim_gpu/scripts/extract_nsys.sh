@@ -10,12 +10,12 @@ SELF_PATH="$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")"
 SRC_BASE="${SRC_BASE:-$APP_DIR/output/profiling}"
 DST_BASE="${DST_BASE:-$APP_DIR/../storage/profiling}"
 
-TOOLCHAIN_MODULE="${TOOLCHAIN_MODULE:-foss/2024a}"
-GPU_MODULE="${GPU_MODULE:-CUDA/12.9.0}"
+TOOLCHAIN_MODULE="${TOOLCHAIN_MODULE:-}"
+GPU_MODULE="${GPU_MODULE:-}"
 
 USE_SRUN="${USE_SRUN:-1}"
-BUILD_CLUSTER="${BUILD_CLUSTER:-htc}"
-BUILD_PARTITION="${BUILD_PARTITION:-interactive}"
+BUILD_CLUSTER="${BUILD_CLUSTER:-}"
+BUILD_PARTITION="${BUILD_PARTITION:-}"
 BUILD_TIME="${BUILD_TIME:-01:00:00}"
 BUILD_MEM="${BUILD_MEM:-8G}"
 BUILD_CPUS_PER_TASK="${BUILD_CPUS_PER_TASK:-4}"
@@ -34,11 +34,11 @@ Options:
 Environment overrides:
   SRC_BASE             Source profiling dir (default: $APP_DIR/output/profiling)
   DST_BASE             Destination dir (default: $APP_DIR/../storage/profiling)
-  TOOLCHAIN_MODULE     Module to load before extraction (default: foss/2024a)
-  GPU_MODULE           CUDA module to load before extraction (default: CUDA/12.9.0)
+  TOOLCHAIN_MODULE     Optional toolchain module to load before extraction
+  GPU_MODULE           Optional CUDA/Nsight module to load before extraction
   USE_SRUN             Dispatch to srun when not already in Slurm allocation (default: 1)
-  BUILD_CLUSTER        srun cluster (default: htc)
-  BUILD_PARTITION      srun partition (default: interactive)
+  BUILD_CLUSTER        Optional srun cluster
+  BUILD_PARTITION      Optional srun partition
   BUILD_TIME           srun walltime (default: 01:00:00)
   BUILD_MEM            srun memory request (default: 8G)
   BUILD_CPUS_PER_TASK  srun cpus-per-task (default: 4)
@@ -163,13 +163,15 @@ if [[ "$USE_SRUN" == "1" ]] && [[ -z "${SLURM_JOB_ID:-}" ]]; then
     if command -v srun >/dev/null 2>&1; then
         SRUN_CMD=(
             srun
-            --clusters "$BUILD_CLUSTER"
-            --partition "$BUILD_PARTITION"
             --time "$BUILD_TIME"
             --ntasks 1
             --cpus-per-task "$BUILD_CPUS_PER_TASK"
-            --mem "$BUILD_MEM"
             --job-name extract_nsys
+        )
+        [[ -n "$BUILD_CLUSTER" ]] && SRUN_CMD+=(--clusters "$BUILD_CLUSTER")
+        [[ -n "$BUILD_PARTITION" ]] && SRUN_CMD+=(--partition "$BUILD_PARTITION")
+        [[ -n "$BUILD_MEM" ]] && SRUN_CMD+=(--mem "$BUILD_MEM")
+        SRUN_CMD+=(
             /usr/bin/env
             USE_SRUN=0
             SRC_BASE="$SRC_BASE"
@@ -186,8 +188,9 @@ if [[ "$USE_SRUN" == "1" ]] && [[ -z "${SLURM_JOB_ID:-}" ]]; then
         if [[ -n "$JOBID_FILTER" ]]; then
             SRUN_CMD+=(--jobid "$JOBID_FILTER")
         fi
-
-        echo "Dispatching NSYS extraction via srun: cluster=$BUILD_CLUSTER partition=$BUILD_PARTITION time=$BUILD_TIME cpus=$BUILD_CPUS_PER_TASK mem=$BUILD_MEM"
+        echo "Dispatching NSYS extraction via srun: time=$BUILD_TIME cpus=$BUILD_CPUS_PER_TASK mem=${BUILD_MEM:-site-default}"
+        [[ -n "$BUILD_CLUSTER" ]] && echo "  cluster=$BUILD_CLUSTER"
+        [[ -n "$BUILD_PARTITION" ]] && echo "  partition=$BUILD_PARTITION"
         exec "${SRUN_CMD[@]}"
     else
         echo "WARN: USE_SRUN=1 but srun not found; running locally." >&2
