@@ -1,20 +1,52 @@
-name: waLBerla Tests
+name: ThermalLBMflow CI
 
 on:
+  push:
+  pull_request:
   workflow_dispatch:
 
 jobs:
-  build:
-
+  cpu-local-smoke:
+    name: Local CPU Smoke Test
     runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     steps:
-    - uses: actions/checkout@v2
-    - name: create build directory
-      run: mkdir build
-    - name: CMake
-      run: cmake -S . -B build -DWALBERLA_BUILD_WITH_MPI=OFF -DWALBERLA_BUILD_TESTS=ON -DWALBERLA_BUILD_WITH_OPENMP=ON
-    - name: make
-      run: cmake --build build -j 2
-    - name: ctest
-      run: cd build; ctest
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            ninja-build \
+            openmpi-bin \
+            libopenmpi-dev \
+            libopenmesh-dev
+
+      - name: Install pinned codegen environment
+        run: ./apps/shared/scripts/install_codegen_venv.sh --python python3
+
+      - name: Build local CPU application
+        working-directory: apps/FluidSim_cpu
+        env:
+          BUILD_JOBS: '2'
+        run: ./build_local.sh
+
+      - name: Run local CPU smoke test
+        working-directory: apps/FluidSim_cpu
+        env:
+          NP: '1'
+          OMP_NUM_THREADS: '1'
+        run: ./run_sim_local.sh
+
+      - name: Verify smoke-test outputs
+        run: |
+          test -f apps/FluidSim_cpu/output/logs/run_sim.log
+          test -f apps/FluidSim_cpu/output/vtk.pvd
