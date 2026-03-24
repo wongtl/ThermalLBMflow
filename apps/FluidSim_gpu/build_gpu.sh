@@ -5,8 +5,8 @@ set -euo pipefail
 
 # Project paths.
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$APP_DIR/../../.." && pwd)"
-SRC_DIR="$PROJECT_ROOT/walberla"
+SRC_DIR="$(cd "$APP_DIR/../.." && pwd)"
+PROJECT_ROOT="$(cd "$SRC_DIR/.." && pwd)"
 VENV="$PROJECT_ROOT/venv-walberla-codegen"
 BUILD_DIR="$PROJECT_ROOT/build-gpu"
 INSTALL_CODEGEN_VENV_SCRIPT="$SRC_DIR/apps/shared/scripts/install_codegen_venv.sh"
