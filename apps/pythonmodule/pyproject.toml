@@ -7,9 +7,9 @@ version="${WALBERLA_VERSION}"
 dependencies = [ "numpy>=1.8.0" , "sympy>=1.9,<=1.12.1" ]
 
 [project.urls]
-Homepage = "https://www.walberla.net"
-Repository = "https://i10git.cs.fau.de/walberla/walberla"
-Issues = "https://i10git.cs.fau.de/walberla/walberla/-/issues/"
+Homepage = "https://github.com/wongtl/ThermalLBMflow"
+Repository = "https://github.com/wongtl/ThermalLBMflow"
+Issues = "https://github.com/wongtl/ThermalLBMflow/issues"
 
 [build-system]
 requires = ["setuptools>=61.0"]
