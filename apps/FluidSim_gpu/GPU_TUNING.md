@@ -44,7 +44,7 @@ Supported runtime knobs:
 - `GPU_MODULE`
 
 Path resolution is automatic for `build_gpu.sh` and `profile_loop_gpu.sh` (derived from script location).
-`run_sim_gpu.sbatch` derives paths from `SLURM_SUBMIT_DIR`; submit from `walberla/apps/FluidSim_gpu`.
+`run_sim_gpu.sbatch` derives paths from `SLURM_SUBMIT_DIR`; submit from `ThermalLBMflow/apps/FluidSim_gpu`.
 
 ## High-impact runtime knobs
 

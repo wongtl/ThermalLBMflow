@@ -96,7 +96,7 @@ Supported `build_gpu.sh` environment overrides:
 Run a batch job:
 
 ```bash
-cd walberla/apps/FluidSim_gpu
+cd ThermalLBMflow/apps/FluidSim_gpu
 sbatch --nodes=1 --gres=gpu:2 --ntasks-per-gpu=1 --cpus-per-gpu=2 run_sim_gpu.sbatch
 
 # Example with optional site-specific routing flags:
@@ -107,7 +107,7 @@ sbatch --nodes=1 --gres=gpu:2 --ntasks-per-gpu=1 --cpus-per-gpu=2 run_sim_gpu.sb
 
 Path resolution is automatic for `build_gpu.sh` and `profile_loop_gpu.sh`
 (derived from script location).
-`run_sim_gpu.sbatch` derives paths from `SLURM_SUBMIT_DIR`; submit from `walberla/apps/FluidSim_gpu`.
+`run_sim_gpu.sbatch` derives paths from `SLURM_SUBMIT_DIR`; submit from `ThermalLBMflow/apps/FluidSim_gpu`.
 
 For the simple local/public workflow, use the CPU local launcher instead:
 
@@ -119,11 +119,11 @@ cd apps/FluidSim_cpu
 ## Restart / Checkpoints
 
 - Checkpoints are written under `output/checkpoint/` with prefix `fluidsim_state_*` (inside the job output tree).
-- Restart archive root is fixed to `<repo_root>/walberla/apps/storage`.
-- To keep a checkpoint set for later restart, copy it to `<repo_root>/walberla/apps/storage/<case>/checkpoint/`.
-- The expected files are `<repo_root>/walberla/apps/storage/<case>/checkpoint/fluidsim_state_*`.
+- Restart archive root is fixed to `<repo_root>/apps/storage`.
+- To keep a checkpoint set for later restart, copy it to `<repo_root>/apps/storage/<case>/checkpoint/`.
+- The expected files are `<repo_root>/apps/storage/<case>/checkpoint/fluidsim_state_*`.
 - In `../shared/params/FluidSim.prm`, set `MeshGeometry.checkpointFolder "<case>"`.
-- Restart then resolves to `<repo_root>/walberla/apps/storage/<case>/checkpoint/fluidsim_state_*`.
+- Restart then resolves to `<repo_root>/apps/storage/<case>/checkpoint/fluidsim_state_*`.
 - If a PLY needs OpenMesh-compatible face-property ordering, the solver may create a cached `geometry_compat/*_openmesh_compat.ply`; this cache is safe to delete.
 
 ## Notes

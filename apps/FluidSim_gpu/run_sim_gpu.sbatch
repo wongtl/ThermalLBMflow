@@ -23,13 +23,13 @@ if [[ -z "${SLURM_JOB_ID:-}" ]]; then
 fi
 
 # Slurm executes a spool copy of this script; derive paths from submit directory.
-# Contract: submit from walberla/apps/FluidSim_gpu.
+# Contract: submit from ThermalLBMflow/apps/FluidSim_gpu.
 if ! APP_DIR="$(cd "${SLURM_SUBMIT_DIR:-$PWD}" && pwd)"; then
     echo "ERROR: Could not resolve submit directory from SLURM_SUBMIT_DIR/PWD." >&2
     exit 1
 fi
 if [[ ! -f "$APP_DIR/run_sim_gpu.sbatch" ]]; then
-    echo "ERROR: submit from walberla/apps/FluidSim_gpu (current submit dir: $APP_DIR)." >&2
+    echo "ERROR: submit from ThermalLBMflow/apps/FluidSim_gpu (current submit dir: $APP_DIR)." >&2
     exit 1
 fi
 

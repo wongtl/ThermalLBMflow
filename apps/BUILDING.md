@@ -13,7 +13,7 @@ once, then choose the build/run path that matches where you want to execute.
 
 ```bash
 git clone <repo-url>
-cd walberla
+cd ThermalLBMflow
 ```
 
 ## 2. Install the code-generation virtual environment
