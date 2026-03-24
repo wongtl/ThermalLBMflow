@@ -16,7 +16,7 @@ CPU build of ThermalLBMflow.
 ```
 
 `build_local.sh` is the intended local build path. It configures
-`build-local` next to the `walberla` checkout, builds `FluidSim_cpu`, and
+`build-local` next to the `ThermalLBMflow` checkout, builds `FluidSim_cpu`, and
 requires the shared codegen venv provisioned by
 `apps/shared/scripts/install_codegen_venv.sh`.
 
