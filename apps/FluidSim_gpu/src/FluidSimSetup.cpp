@@ -1877,6 +1877,7 @@ int runFluidSimSetupAndRuntime(int argc, char** argv)
         {
             auto* cellType = block.getData<CellTypeField>(cellTypeID);
             auto* bcId = block.getData<BcField>(bcIdID);
+            auto* regionId = block.getData<RegionIdField>(regionIdID);
             auto* inletFaceSeed = block.getData<OpenBoundarySeedField>(inletFaceSeedID);
             auto* outletFaceSeed = block.getData<OpenBoundarySeedField>(outletFaceSeedID);
             auto* pressureFaceSeed = block.getData<OpenBoundarySeedField>(pressureFaceSeedID);
