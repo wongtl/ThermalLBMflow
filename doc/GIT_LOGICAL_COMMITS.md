@@ -5,7 +5,7 @@ This repository enforces commit message quality via local git hooks.
 ## Enable Once Per Clone
 
 ```bash
-cd /workspaces/walberla-dev/walberla
+cd /workspaces/walberla-dev/ThermalLBMflow
 bash utilities/git/setup-logical-commits.sh
 ```
 
